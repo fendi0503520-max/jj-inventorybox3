@@ -15,7 +15,7 @@
   --panel:#ffffff;
   --card:#ffffff;
   --border:rgba(0,0,0,0.09);
-  --border2:rgba(255,255,255,0.12);
+  --border2:rgba(0,0,0,0.07);
   --red:#e03a2f;
   --red-dim:rgba(220,38,38,0.08);
   --blue:#1d6fb8;
@@ -635,7 +635,8 @@ data.forEach(item => {
 const _u = JJ.getUser(); if (!_u) location.href = 'login.html';
 document.querySelectorAll('.user-name').forEach(el => el.textContent = _u ? _u.name : '');
 
-document.addEventListener('DOMContentLoaded', () => {
+// 直接執行（原 DOMContentLoaded callback）
+
   const products = JJ.getProducts();
   const logs     = JJ.getLogs();
 
@@ -667,14 +668,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const typeColor = { '入庫': '#4a90d9', '出庫': '#3dba7e', '商品管理': '#f5a623', '登入/登出': '#9b6dff' };
     logTbody.innerHTML = logRows.map(l => `
       <tr>
-        <td style="color:#6b7280;font-size:12px">${l.time||'—'}</td>
+        <td style="color:#6474880;font-size:12px">${l.time||'—'}</td>
         <td><span style="padding:2px 9px;border-radius:7px;font-size:11px;font-weight:600;background:rgba(0,0,0,0.05);color:${typeColor[l.type]||'#9ca3af'}">${l.type}</span></td>
         <td style="font-weight:500">${l.prod}</td>
         <td style="font-weight:700;color:${l.chg&&l.chg.startsWith('+')?'#4a90d9':'#3dba7e'}">${l.chg}</td>
-        <td style="color:#6b7280">${l.user}</td>
+        <td style="color:#6474880">${l.user}</td>
       </tr>`).join('');
   }
-});
+
 </script>
 
 

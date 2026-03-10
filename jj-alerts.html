@@ -285,7 +285,8 @@ renderCards();
 <script>
 const _u = JJ.getUser(); if (!_u) location.href = 'login.html';
 document.querySelectorAll('.user-name').forEach(el => el.textContent = _u ? _u.name : '');
-document.addEventListener('DOMContentLoaded', () => {
+// 直接執行（原 DOMContentLoaded callback）
+
   const products = JJ.getProducts();
   const lowProds = products.filter(p => p.status==='active' && p.stock < p.safe)
     .sort((a,b)=>(a.stock/a.safe)-(b.stock/b.safe));
@@ -313,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
     days: 1,
   }));
   renderCards();
-});
+
 </script>
 
 <script>

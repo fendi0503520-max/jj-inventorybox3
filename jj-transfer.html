@@ -193,7 +193,9 @@ tbody tr:last-child td{border-bottom:none;}
 <div class="toast" id="toast"></div>
 
 <script>
-const _u=JJ.getUser();if(!_u){location.href='login.html';}
+const _u=JJ.getUser();
+if(!_u||!JJ.isSessionAlive()){JJ.clearUser();location.href='login.html';}
+else JJ.touchSession();
 document.getElementById('sName').textContent=_u.name;
 document.getElementById('sRole').textContent=_u.role;
 document.getElementById('sAvatar').textContent=_u.name[0];

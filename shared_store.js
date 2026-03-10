@@ -21,8 +21,9 @@ const JJ = (() => {
     '系統管理員': ['*'], // 全部
     '倉管人員': [
       'jj-dashboard','jj-products','jj-stock',
-      'jj-inbound','jj-outbound','jj-logs',
-      'jj-alerts','jj-reports','jj-warroom','jj-profile',
+      'jj-inbound','jj-outbound','jj-transfer','jj-logs',
+      'jj-alerts','jj-inventory','jj-reports','jj-warroom',
+      'jj-qrcode','jj-profile',
     ],
     '唯讀人員': [
       'jj-dashboard','jj-stock','jj-logs',

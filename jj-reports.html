@@ -368,6 +368,7 @@ function startExport(name,fmt){
 </div>
 
 <!-- SheetJS 真實 Excel 匯出 -->
+<script src="shared_store.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 function realExcelExport(reportType) {
@@ -416,7 +417,8 @@ function showToastMsg(msg) {
 }
 
 // 攔截所有「匯出」按鈕，替換成真實匯出
-document.addEventListener('DOMContentLoaded', () => {
+// 直接執行（原 DOMContentLoaded callback）
+
   // 替換點擊事件
   document.querySelectorAll('.report-item button, .export-btn, [onclick*="export"], [onclick*="Export"]').forEach(btn => {
     btn.addEventListener('click', e => {
@@ -428,7 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
       else realExcelExport('all');
     }, true);
   });
-});
+
 </script>
 
 </body>

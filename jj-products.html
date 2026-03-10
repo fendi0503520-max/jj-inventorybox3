@@ -353,7 +353,7 @@ let editId=null;
 function statusStyle(s){
   if(s==='正常') return `<span class="status-dot"><span class="dot" style="background:#3dba7e"></span><span style="color:#3dba7e">正常</span></span>`;
   if(s==='低庫存') return `<span class="status-dot"><span class="dot" style="background:#e03a2f"></span><span style="color:#e03a2f">低庫存</span></span>`;
-  return `<span class="status-dot"><span class="dot" style="background:#6b7280"></span><span style="color:#6b7280">停用</span></span>`;
+  return `<span class="status-dot"><span class="dot" style="background:#6474880"></span><span style="color:#6474880">停用</span></span>`;
 }
 function stockBar(stock,safe){
   const pct=safe>0?Math.min(100,Math.round(stock/safe*100)):100;
@@ -369,7 +369,7 @@ function renderTable(data){
   document.getElementById('pageInfo').textContent=`共 ${data.length} 筆商品`;
   if(!data.length){tb.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted)">找不到符合條件的商品</td></tr>`;return;}
   tb.innerHTML=data.map(p=>{
-    const cc=catColors[p.cat]||{bg:'rgba(255,255,255,0.07)',c:'#9ca3af'};
+    const cc=catColors[p.cat]||{bg:'rgba(0,0,0,0.05)',c:'#9ca3af'};
     return `<tr>
       <td><div class="prod-name">${p.name}</div><div class="prod-code">${p.code}${p.barcode?` · ${p.barcode}`:''}</div></td>
       <td><span class="cat-badge" style="background:${cc.bg};color:${cc.c}">${p.cat}</span></td>
@@ -485,9 +485,9 @@ function renderTable(list) {
   tbody.innerHTML = list.map(p => {
     const pct  = Math.min(100, Math.round(p.stock / p.safe * 100));
     const col  = pct < 30 ? '#e03a2f' : pct < 70 ? '#f5a623' : '#3dba7e';
-    const slabel = p.status === 'active' ? '<span style="color:#3dba7e;font-weight:600">● 啟用</span>' : '<span style="color:#6b7280">○ 停用</span>';
+    const slabel = p.status === 'active' ? '<span style="color:#3dba7e;font-weight:600">● 啟用</span>' : '<span style="color:#6474880">○ 停用</span>';
     return `<tr>
-      <td><div style="font-weight:600">${p.name}</div><div style="font-size:11px;color:#6b7280">${p.code}</div></td>
+      <td><div style="font-weight:600">${p.name}</div><div style="font-size:11px;color:#6474880">${p.code}</div></td>
       <td><span style="padding:2px 9px;border-radius:7px;font-size:11px;font-weight:600;background:rgba(74,144,217,0.1);color:#4a90d9">${p.cat}</span></td>
       <td style="color:#9ca3af">${p.unit}</td>
       <td>
@@ -496,7 +496,7 @@ function renderTable(list) {
           <span style="font-weight:700;color:${col};min-width:28px">${p.stock}</span>
         </div>
       </td>
-      <td style="color:#6b7280">${p.safe}</td>
+      <td style="color:#6474880">${p.safe}</td>
       <td><span style="background:rgba(0,0,0,0.04);padding:2px 8px;border-radius:5px;font-size:12px">${p.wh}</span></td>
       <td>${slabel}</td>
       <td style="white-space:nowrap">
@@ -504,7 +504,7 @@ function renderTable(list) {
         <button onclick="deleteProd('${p.id}')" style="padding:4px 10px;border-radius:6px;background:rgba(224,58,47,0.1);color:#e03a2f;border:1px solid rgba(224,58,47,0.2);font-size:12px;cursor:pointer;font-family:inherit">🗑</button>
       </td>
     </tr>`;
-  }).join('') || '<tr><td colspan="8" style="text-align:center;padding:30px;color:#6b7280">查無商品資料</td></tr>';
+  }).join('') || '<tr><td colspan="8" style="text-align:center;padding:30px;color:#6474880">查無商品資料</td></tr>';
   renderStats();
 }
 
@@ -529,10 +529,10 @@ function buildModalHTML(p) {
   const whOpts = whs.map(w => `<option ${p&&p.wh===w?'selected':''}>${w}</option>`).join('');
   return `
   <div id="jjModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:500;display:flex;align-items:center;justify-content:center">
-    <div style="background:#131929;border:1px solid rgba(255,255,255,0.13);border-radius:16px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;animation:popIn .25s ease">
-      <div style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;justify-content:space-between;align-items:center">
+    <div style="background:#ffffff;border:1px solid rgba(255,255,255,0.13);border-radius:16px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;animation:popIn .25s ease">
+      <div style="padding:20px 24px;border-bottom:1px solid rgba(0,0,0,0.05);display:flex;justify-content:space-between;align-items:center">
         <div style="font-size:15px;font-weight:700">${p ? '✏️ 編輯商品' : '➕ 新增商品'}</div>
-        <button onclick="closeModal()" style="background:transparent;border:1px solid rgba(255,255,255,0.07);color:#6b7280;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:16px">✕</button>
+        <button onclick="closeModal()" style="background:transparent;border:1px solid rgba(0,0,0,0.05);color:#6474880;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:16px">✕</button>
       </div>
       <div style="padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
         ${field('商品名稱','mName',p&&p.name,'text','required',true)}
@@ -545,14 +545,14 @@ function buildModalHTML(p) {
         ${selectField('所在倉庫','mWh',whOpts)}
         <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:5px">
           <label style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.04em">狀態</label>
-          <select id="mStatus" style="padding:9px 12px;background:rgba(0,0,0,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:8px;color:#f0f4ff;font-size:13px;font-family:inherit">
+          <select id="mStatus" style="padding:9px 12px;background:rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.05);border-radius:8px;color:#1a2535;font-size:13px;font-family:inherit">
             <option value="active" ${p&&p.status==='active'?'selected':''}>啟用</option>
             <option value="inactive" ${p&&p.status==='inactive'?'selected':''}>停用</option>
           </select>
         </div>
       </div>
-      <div style="padding:16px 24px;border-top:1px solid rgba(255,255,255,0.07);display:flex;justify-content:flex-end;gap:10px">
-        <button onclick="closeModal()" style="padding:9px 18px;border-radius:9px;background:#1a2235;border:1px solid rgba(255,255,255,0.07);color:#6b7280;font-size:13px;font-family:inherit;cursor:pointer">取消</button>
+      <div style="padding:16px 24px;border-top:1px solid rgba(0,0,0,0.05);display:flex;justify-content:flex-end;gap:10px">
+        <button onclick="closeModal()" style="padding:9px 18px;border-radius:9px;background:#ffffff;border:1px solid rgba(0,0,0,0.05);color:#6474880;font-size:13px;font-family:inherit;cursor:pointer">取消</button>
         <button onclick="saveProd()" style="padding:9px 22px;border-radius:9px;background:linear-gradient(135deg,#3dba7e,#2a9960);color:#fff;border:none;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">✓ 儲存</button>
       </div>
     </div>
@@ -562,13 +562,13 @@ function field(label, id, val, type, ph, full, extra) {
   return `<div style="display:flex;flex-direction:column;gap:5px;${full?'grid-column:1/-1':''}">
     <label style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.04em">${label}</label>
     <input id="${id}" type="${type||'text'}" value="${val||''}" placeholder="${ph||''}" ${extra||''}
-      style="padding:9px 12px;background:rgba(0,0,0,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:8px;color:#f0f4ff;font-size:13px;font-family:inherit;outline:none"/>
+      style="padding:9px 12px;background:rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.05);border-radius:8px;color:#1a2535;font-size:13px;font-family:inherit;outline:none"/>
   </div>`;
 }
 function selectField(label, id, opts) {
   return `<div style="display:flex;flex-direction:column;gap:5px">
     <label style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.04em">${label}</label>
-    <select id="${id}" style="padding:9px 12px;background:rgba(0,0,0,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:8px;color:#f0f4ff;font-size:13px;font-family:inherit">${opts}</select>
+    <select id="${id}" style="padding:9px 12px;background:rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.05);border-radius:8px;color:#1a2535;font-size:13px;font-family:inherit">${opts}</select>
   </div>`;
 }
 
@@ -626,21 +626,20 @@ function showToast(msg) {
 }
 
 // ── 綁定新增按鈕 ──
-document.addEventListener('DOMContentLoaded', () => {
+// 直接執行（原 DOMContentLoaded callback）
+
   renderTable();
   // 綁定搜尋
   const si = document.getElementById('searchInput') || document.querySelector('input[placeholder*="搜尋"]');
   if (si) si.addEventListener('input', doSearch);
   // 綁定新增按鈕
-  document.querySelectorAll('button').forEach(btn => {
-    if (btn.textContent.includes('新增商品')) btn.onclick = openAdd;
-  });
+  // 按鈕已有 onclick='openModal()'，無需重複綁定
   // 綁定篩選
   ['catFilter','statusFilter'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('change', doSearch);
   });
-});
+
 </script>
 <style>@keyframes popIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}</style>
 
@@ -749,11 +748,12 @@ const imgObserver = new MutationObserver(() => {
     refreshProductImages();
   }, 100);
 });
-document.addEventListener('DOMContentLoaded', () => {
+// 直接執行（原 DOMContentLoaded callback）
+
   const tbody = document.querySelector('tbody');
   if (tbody) imgObserver.observe(tbody, { childList: true, subtree: true });
   setTimeout(refreshProductImages, 500);
-});
+
 </script>
 
 </body>

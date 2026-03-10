@@ -253,7 +253,7 @@ function render(data){
   const tb=document.getElementById('logBody');
   if(!data.length){tb.innerHTML=`<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--muted)">查無符合條件的異動紀錄</td></tr>`;return;}
   tb.innerHTML=data.slice(0,20).map(r=>{
-    const ts=typeStyle[r.type]||{bg:'rgba(255,255,255,0.07)',c:'#9ca3af'};
+    const ts=typeStyle[r.type]||{bg:'rgba(0,0,0,0.05)',c:'#9ca3af'};
     const chgStr=r.chg>0?`<span class="qty-in">+${r.chg}</span>`:r.chg<0?`<span class="qty-out">${r.chg}</span>`:`<span class="qty-adj">調撥</span>`;
     return `<tr>
       <td style="color:var(--muted);white-space:nowrap">${r.time}</td>
@@ -284,7 +284,8 @@ render(logs);
 <script>
 const _u = JJ.getUser(); if (!_u) location.href = 'login.html';
 document.querySelectorAll('.user-name').forEach(el => el.textContent = _u ? _u.name : '');
-document.addEventListener('DOMContentLoaded', () => {
+// 直接執行（原 DOMContentLoaded callback）
+
   const logs = JJ.getLogs();
   const tb = document.getElementById('logBody');
   if (!tb) return;
@@ -299,18 +300,18 @@ document.addEventListener('DOMContentLoaded', () => {
       const s = tStyle[l.type]||{bg:'rgba(0,0,0,0.04)',c:'#9ca3af'};
       const chgStr = String(l.chg).startsWith('+')?`<span style="color:#4a90d9;font-weight:700">${l.chg}</span>`:`<span style="color:#3dba7e;font-weight:700">${l.chg}</span>`;
       return `<tr>
-        <td style="color:#6b7280;font-size:12px;white-space:nowrap">${l.time||'—'}</td>
+        <td style="color:#6474880;font-size:12px;white-space:nowrap">${l.time||'—'}</td>
         <td>—</td>
         <td><span style="padding:2px 9px;border-radius:7px;font-size:11px;font-weight:600;background:${s.bg};color:${s.c}">${l.type}</span></td>
         <td style="font-weight:500">${l.prod}</td>
         <td><span style="font-size:12px;background:rgba(0,0,0,0.04);padding:2px 7px;border-radius:5px">${l.wh||'—'}</span></td>
         <td>${chgStr}</td>
-        <td style="color:#6b7280">${l.before}</td>
+        <td style="color:#6474880">${l.before}</td>
         <td style="font-weight:600">${l.after}</td>
-        <td style="color:#6b7280">${l.user||'—'}</td>
-        <td style="color:#6b7280;font-size:12px">${l.note||'—'}</td>
+        <td style="color:#6474880">${l.user||'—'}</td>
+        <td style="color:#6474880;font-size:12px">${l.note||'—'}</td>
       </tr>`;
-    }).join('') || '<tr><td colspan="10" style="text-align:center;padding:30px;color:#6b7280">尚無異動紀錄</td></tr>';
+    }).join('') || '<tr><td colspan="10" style="text-align:center;padding:30px;color:#6474880">尚無異動紀錄</td></tr>';
   }
   render(logs);
   document.querySelector('.btn-search')?.addEventListener('click', () => {
@@ -319,7 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const user = document.getElementById('fUser')?.value;
     render(logs.filter(l => (!type||l.type===type)&&(!wh||String(l.wh).includes(wh))&&(!user||l.user===user)));
   });
-});
+
 </script>
 
 <script>

@@ -265,14 +265,15 @@
 
   <script>
 // 密碼顯示切換
-const pwInput = document.getElementById('password');
-if (pwInput) {
-  const toggle = document.getElementById('togglePw');
-  if (toggle) toggle.addEventListener('click', () => {
-    pwInput.type = pwInput.type === 'password' ? 'text' : 'password';
-  });
-}
-function socialLogin(p) { alert('使用 ' + p + ' 登入（示範用）'); }
+window.addEventListener('load', function() {
+  var pwInput = document.getElementById('password');
+  var toggle  = document.getElementById('togglePw');
+  if (toggle && pwInput) {
+    toggle.addEventListener('click', function() {
+      pwInput.type = pwInput.type === 'password' ? 'text' : 'password';
+    });
+  }
+});
 </script>
 
 <style>
@@ -292,71 +293,73 @@ function socialLogin(p) { alert('使用 ' + p + ' 登入（示範用）'); }
 
 
 <script>
-// ── JJ 登入邏輯（唯一版本）──
-(function() {
-  // 已登入且 session 有效 → 直接跳儀表板
-  if (JJ.getUser() && JJ.isSessionAlive()) {
+// ── JJ 登入系統 ──
+// 若已登入且 session 有效，直接進儀表板
+window.onload = function() {
+  if (typeof JJ !== 'undefined' && JJ.getUser() && JJ.isSessionAlive()) {
     location.href = 'jj-dashboard.html';
     return;
   }
+  setupLogin();
+};
 
-  // DOMContentLoaded 改為立即執行（相容 GitHub Pages）
-  (function() {
-    const emailEl  = document.querySelector('input[type="email"]');
-    const pwdEl    = document.querySelector('input[type="password"]');
-    const loginBtn = document.querySelector('.btn-login') || document.querySelector('button[type="submit"]') || document.querySelector('button');
+function setupLogin() {
+  var emailEl  = document.getElementById('email');
+  var pwdEl    = document.getElementById('password');
+  var loginBtn = document.getElementById('loginBtn');
+  var errBox   = document.getElementById('loginErr');
 
-    // 錯誤訊息框
-    const errBox = document.createElement('div');
-    errBox.style.cssText = 'color:#c0392b;font-size:13px;margin-top:10px;padding:10px 14px;background:rgba(192,57,43,0.07);border:1px solid rgba(192,57,43,0.2);border-radius:8px;display:none;text-align:center;line-height:1.7';
-    if (loginBtn) loginBtn.parentNode.insertBefore(errBox, loginBtn.nextSibling);
+  if (!errBox) {
+    errBox = document.createElement('div');
+    errBox.id = 'loginErr';
+    errBox.style.cssText = 'color:#c0392b;font-size:13px;margin-top:10px;padding:10px 14px;' +
+      'background:rgba(192,57,43,0.07);border:1px solid rgba(192,57,43,0.2);' +
+      'border-radius:8px;display:none;text-align:center;line-height:1.7';
+    if (loginBtn && loginBtn.parentNode) {
+      loginBtn.parentNode.insertBefore(errBox, loginBtn.nextSibling);
+    }
+  }
 
-    // 測試帳號提示
-    const hint = document.createElement('div');
-    hint.style.cssText = 'margin-top:12px;padding:10px 14px;background:rgba(29,111,184,0.07);border:1px solid rgba(29,111,184,0.18);border-radius:8px;font-size:12px;color:#64748b;line-height:1.8;text-align:center';
-    hint.innerHTML = '📋 測試帳號<br><strong style="color:#1d6fb8">admin@jj.com.tw</strong>　密碼：<strong style="color:#1d6fb8">jj1234</strong>';
-    if (loginBtn) loginBtn.parentNode.appendChild(hint);
-
-    function showErr(msg) { errBox.innerHTML = msg; errBox.style.display = 'block'; shake(); }
-    function hideErr()    { errBox.style.display = 'none'; }
-    function shake() {
-      const card = document.querySelector('.login-card, .card, form, .login-box');
-      if (!card) return;
-      card.style.animation = 'none'; card.offsetHeight;
+  function showErr(msg) {
+    errBox.innerHTML = msg;
+    errBox.style.display = 'block';
+    var card = document.querySelector('.login-card') || document.querySelector('.card');
+    if (card) {
+      card.style.animation = 'none';
+      card.offsetHeight;
       card.style.animation = 'shake .4s ease';
     }
+  }
 
-    function tryLogin() {
-      hideErr();
-      const email = emailEl ? emailEl.value.trim() : '';
-      const pwd   = pwdEl   ? pwdEl.value           : '';
-      if (!email || !pwd) { showErr('⚠ 請輸入帳號與密碼'); return; }
+  function doLogin() {
+    errBox.style.display = 'none';
+    var email = emailEl ? emailEl.value.trim() : '';
+    var pwd   = pwdEl   ? pwdEl.value : '';
+    if (!email || !pwd) { showErr('⚠ 請輸入帳號與密碼'); return; }
 
-      // 使用 shared_store 統一登入（含鎖定、session、mustChange）
-      const result = JJ.login(email, pwd);
-
-      if (!result.ok) {
-        if (result.reason === 'locked') {
-          showErr('🔒 帳號已鎖定，請 ' + result.minutes + ' 分鐘後再試<br><small>連續輸入錯誤密碼超過 ' + JJ.MAX_FAIL + ' 次</small>');
-        } else {
-          showErr('⚠ 帳號或密碼錯誤<br><small>還有 ' + result.remaining + ' 次機會，超過將鎖定帳號</small>');
-        }
-        return;
+    var result = JJ.login(email, pwd);
+    if (!result.ok) {
+      if (result.reason === 'locked') {
+        showErr('🔒 帳號已鎖定，請 ' + result.minutes + ' 分鐘後再試');
+      } else {
+        showErr('⚠ 帳號或密碼錯誤，還有 ' + result.remaining + ' 次機會');
       }
-
-      // 登入成功 → 淡出後跳轉
-      const card = document.querySelector('.login-card, .card, form, .login-box');
-      if (card) { card.style.transition = 'opacity .35s'; card.style.opacity = '0'; }
-      setTimeout(function() {
-        location.href = result.mustChange ? 'jj-profile.html' : 'jj-dashboard.html';
-      }, 380);
+      return;
     }
+    // 登入成功
+    var card = document.querySelector('.login-card') || document.querySelector('.card');
+    if (card) { card.style.transition = 'opacity .3s'; card.style.opacity = '0'; }
+    setTimeout(function() {
+      location.href = result.mustChange ? 'jj-profile.html' : 'jj-dashboard.html';
+    }, 350);
+  }
 
-    if (loginBtn) loginBtn.addEventListener('click', tryLogin);
-    if (pwdEl)    pwdEl.addEventListener('keydown', function(e) { if (e.key === 'Enter') tryLogin(); });
-    if (emailEl)  emailEl.addEventListener('keydown', function(e) { if (e.key === 'Enter') pwdEl && pwdEl.focus(); });
-  })();
-})();
+  if (loginBtn) loginBtn.addEventListener('click', doLogin);
+  if (pwdEl)    pwdEl.addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
+  if (emailEl)  emailEl.addEventListener('keydown', function(e) { if (e.key === 'Enter') pwdEl && pwdEl.focus(); });
+}
+
+function socialLogin(p) { alert('使用 ' + p + ' 登入（示範用）'); }
 </script>
 <style>
 @keyframes shake {
