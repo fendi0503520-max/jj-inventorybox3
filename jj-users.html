@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<script src="shared_store.js"></script>
+
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JJ 簡易庫存管理系統 — 權限管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f0f4f8;--sidebar:#ffffff;--panel:#ffffff;--card:#ffffff;--border:rgba(0,0,0,0.09);--border2:rgba(0,0,0,0.15);--red:#e03a2f;--red-dim:rgba(220,38,38,0.08);--blue:#1d6fb8;--blue-dim:rgba(29,111,184,0.08);--green:#1a9e5c;--green-dim:rgba(26,158,92,0.08);--yellow:#f5a623;--yellow-dim:rgba(217,119,6,0.08);--purple:#9b6dff;--purple-dim:rgba(124,58,237,0.08);--text:#1a2535;--muted:#64748b;--muted2:#e2e8f0;}
+body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans TC',sans-serif;color:var(--text);font-size:14px;}
+.sidebar{width:220px;flex-shrink:0;background:var(--sidebar);border-right:1px solid var(--border);box-shadow:2px 0 12px rgba(0,0,0,0.06);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;}
+.sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px;}
+.jj-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#e03a2f,#a01e15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;box-shadow:0 4px 12px rgba(224,58,47,0.35);flex-shrink:0;}
+.logo-text{font-size:13px;font-weight:700;color:#1a2535;}.logo-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+.nav{flex:1;padding:16px 0;overflow-y:auto;}
+.nav-section{font-size:10px;color:var(--muted);letter-spacing:.1em;padding:12px 20px 6px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;color:#64748b;font-size:13px;font-weight:500;border-left:3px solid transparent;transition:all .2s;}
+.nav-item:hover{color:var(--text);background:rgba(0,0,0,0.03);}
+.nav-item.active{color:var(--red);background:rgba(220,38,38,0.06);border-left-color:var(--red);}
+.nav-icon{font-size:16px;width:20px;text-align:center;}
+.nav-badge{margin-left:auto;padding:1px 7px;border-radius:10px;background:var(--red);color:#fff;font-size:10px;font-weight:700;}
+.sidebar-user{padding:16px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+.user-name{font-size:13px;font-weight:600;}.user-role{font-size:10px;color:var(--muted);margin-top:1px;}
+.user-logout{margin-left:auto;color:var(--muted);font-size:16px;cursor:pointer;}
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;}
+.topbar{height:60px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:16px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:16px;font-weight:700;}.topbar-breadcrumb{font-size:12px;color:var(--muted);margin-left:4px;}
+.topbar-date{margin-left:auto;font-size:12px;color:var(--muted);}
+.topbar-notif{width:34px;height:34px;border-radius:8px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;font-size:16px;}
+.notif-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--red);border:2px solid var(--panel);}
+.content{padding:28px;flex:1;}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,0.04);padding:16px 18px;animation:fadeUp .3s ease both;}
+.kpi-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+.kpi-value{font-size:26px;font-weight:700;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,0.05);overflow:hidden;animation:fadeUp .4s ease both;margin-bottom:20px;}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-size:14px;font-weight:700;}
+.user-table{width:100%;border-collapse:collapse;}
+.user-table th{padding:9px 14px;font-size:11px;font-weight:600;color:var(--muted);text-align:left;letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.02);}
+.user-table td{padding:12px 14px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+.user-table tbody tr:last-child td{border-bottom:none;}
+.user-table tbody tr:hover td{background:rgba(0,0,0,0.02);}
+.u-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;}
+.u-info{display:flex;align-items:center;gap:10px;}
+.u-name{font-size:13px;font-weight:600;}.u-email{font-size:11px;color:var(--muted);}
+.role-badge{display:inline-block;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;}
+.action-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:13px;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;}
+.action-btn:hover{border-color:var(--border2);color:var(--text);}
+.action-btn.danger:hover{border-color:var(--red);color:var(--red);}
+.perm-table{width:100%;border-collapse:collapse;}
+.perm-table th{padding:10px 12px;font-size:11px;font-weight:600;color:var(--muted);text-align:center;letter-spacing:.04em;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.02);}
+.perm-table th:first-child{text-align:left;}
+.perm-table td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:12px;text-align:center;vertical-align:middle;}
+.perm-table tbody tr:last-child td{border-bottom:none;}
+.perm-table tbody tr:hover td{background:rgba(0,0,0,0.02);}
+.perm-table td:first-child{text-align:left;font-weight:500;color:var(--text);}
+.perm-group-row td{font-size:11px;color:var(--muted);padding:8px 12px 4px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;background:rgba(255,255,255,0.01);border-bottom:1px solid var(--border);}
+.check-on{color:var(--green);font-size:15px;}
+.check-off{color:var(--muted2);font-size:15px;}
+.check-partial{color:var(--yellow);font-size:13px;font-weight:700;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-full{grid-column:1/-1;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-label{font-size:11px;color:var(--muted);font-weight:500;letter-spacing:.04em;text-transform:uppercase;}
+.form-label span{color:var(--red);}
+.form-input{padding:9px 12px;background:rgba(0,0,0,0.03);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color .2s;}
+.form-input:focus{border-color:var(--purple);box-shadow:0 0 0 3px var(--purple-dim);}
+.form-input::placeholder{color:var(--muted2);}
+select.form-input{cursor:pointer;}
+.btn-new-user{padding:8px 16px;border-radius:9px;background:var(--purple-dim);color:var(--purple);border:1px solid rgba(155,109,255,0.2);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;}
+.btn-outline{padding:7px 14px;border-radius:8px;background:transparent;border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;}
+.btn-outline:hover{color:var(--text);border-color:var(--border2);}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;}
+.modal-overlay.show{display:flex;}
+.modal{background:var(--panel);border:1px solid var(--border2);border-radius:16px;width:480px;max-width:95vw;animation:popIn .25s ease;overflow:hidden;}
+.modal-head{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-head h3{font-size:15px;font-weight:700;}
+.modal-close{width:28px;height:28px;border-radius:7px;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
+.modal-body{padding:24px;}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;}
+.btn-cancel{padding:9px 18px;border-radius:9px;background:var(--card);border:1px solid var(--border);color:var(--muted);font-size:13px;font-family:inherit;cursor:pointer;}
+.btn-save{padding:9px 22px;border-radius:9px;background:linear-gradient(135deg,var(--purple),#6b3fd4);color:#fff;border:none;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;}
+.toast{position:fixed;bottom:30px;right:30px;background:#1e2a3a;border:1px solid rgba(155,109,255,0.3);border-radius:12px;padding:14px 20px;font-size:13px;font-weight:600;color:var(--purple);box-shadow:0 8px 24px rgba(0,0,0,0.4);transform:translateY(80px);opacity:0;transition:all .3s;z-index:999;}
+.toast.show{transform:translateY(0);opacity:1;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+@keyframes popIn{from{opacity:0;transform:scale(.95);}to{opacity:1;transform:scale(1);}}
+@media(max-width:900px){.kpi-row{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:640px){.sidebar{display:none;}.main{margin-left:0;}.form-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo"><div class="jj-icon">JJ</div><div><div class="logo-text">JJ 庫存系統</div><div class="logo-sub">倉儲／物流版</div></div></div>
+    <nav class="nav">
+    <div class="nav-section">主選單</div>
+    <div class="nav-item" onclick="location.href='jj-dashboard.html'"><span class="nav-icon">🏠</span> 儀表板</div>
+    <div class="nav-item" onclick="location.href='jj-products.html'"><span class="nav-icon">📦</span> 商品管理</div>
+    <div class="nav-item" onclick="location.href='jj-stock.html'"><span class="nav-icon">🔍</span> 庫存查詢</div>
+    <div class="nav-section">入出庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-inbound.html'"><span class="nav-icon">📥</span> 入庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-outbound.html'"><span class="nav-icon">📤</span> 出庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-transfer.html'"><span class="nav-icon">🔄</span> 調撥作業</div>
+    <div class="nav-item" onclick="location.href='jj-logs.html'"><span class="nav-icon">📋</span> 異動紀錄</div>
+    <div class="nav-section">分析</div>
+    <div class="nav-item" onclick="location.href='jj-warroom.html'"><span class="nav-icon">🎯</span> 戰情室</div>
+    <div class="nav-section">警示與報表</div>
+    <div class="nav-item" onclick="location.href='jj-alerts.html'"><span class="nav-icon">🔔</span> 低庫存警示<span class="nav-badge" id="navBadge">0</span></div>
+    <div class="nav-item" onclick="location.href='jj-inventory.html'"><span class="nav-icon">🗂️</span> 盤點作業</div>
+    <div class="nav-item" onclick="location.href='jj-reports.html'"><span class="nav-icon">📊</span> 報表匯出</div>
+    <div class="nav-section">工具</div>
+    <div class="nav-item" onclick="location.href='jj-qrcode.html'"><span class="nav-icon">🔲</span> QR Code</div>
+    <div class="nav-section">系統管理</div>
+    <div class="nav-item" onclick="location.href='jj-users.html'" ><span class="nav-icon">👥</span> 權限管理</div>
+    <div class="nav-item" onclick="location.href='jj-oplog.html'"><span class="nav-icon">📝</span> 操作紀錄</div>
+    <div class="nav-item" onclick="location.href='jj-warehouse.html'"><span class="nav-icon">🏭</span> 倉庫設定</div>
+    <div class="nav-section">帳號</div>
+    <div class="nav-item" onclick="location.href='jj-profile.html'"><span class="nav-icon">👤</span> 帳號設定</div>
+  </nav>
+  <div class="sidebar-user">
+    <div class="user-avatar">黃</div>
+    <div><div class="user-name">黃小翰</div><div class="user-role">系統管理員</div></div>
+    <div class="user-logout" onclick="if(confirm('確定要登出嗎？')){JJ.addLog({type:'登入/登出',prod:'—',wh:'—',chg:'—',before:'—',after:'—',user:(JJ.getUser()||{}).name||'',doc:'—',note:'使用者登出系統'});JJ.clearUser();location.href='login.html';}" style="cursor:pointer">⏻</div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div><span class="topbar-title">權限管理</span><span class="topbar-breadcrumb">/ 使用者與角色設定</span></div>
+    <div class="topbar-date" id="topbarDate"></div>
+    <div class="topbar-notif">🔔<div class="notif-dot"></div></div>
+  </div>
+  <div class="content">
+    <div class="kpi-row">
+      <div class="kpi" style="border-top:2px solid var(--purple)"><div class="kpi-label">使用者總數</div><div class="kpi-value" style="color:var(--purple)">6</div></div>
+      <div class="kpi" style="border-top:2px solid var(--green);animation-delay:.05s"><div class="kpi-label">啟用中</div><div class="kpi-value" style="color:var(--green)" id="kActive">5</div></div>
+      <div class="kpi" style="border-top:2px solid var(--yellow);animation-delay:.1s"><div class="kpi-label">停用帳號</div><div class="kpi-value" style="color:var(--yellow)" id="kInactive">1</div></div>
+      <div class="kpi" style="border-top:2px solid var(--blue);animation-delay:.15s"><div class="kpi-label">角色種類</div><div class="kpi-value" style="color:var(--blue)">3</div></div>
+    </div>
+
+    <div class="card" style="animation-delay:.1s">
+      <div class="card-header">
+        <div class="card-title">👥 使用者清單</div>
+        <button class="btn-new-user" onclick="openModal()">＋ 新增使用者</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="user-table">
+          <thead><tr><th>使用者</th><th>角色</th><th>倉庫權限</th><th>最後登入</th><th>狀態</th><th style="text-align:right">操作</th></tr></thead>
+          <tbody id="userBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="animation-delay:.2s">
+      <div class="card-header">
+        <div class="card-title">🔐 角色權限對照表</div>
+        <button class="btn-outline" onclick="showToast('✏️ 進入權限編輯模式')">編輯權限</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="perm-table">
+          <thead><tr><th style="width:35%">功能模組</th><th>系統管理員</th><th>倉管人員</th><th>唯讀人員</th></tr></thead>
+          <tbody id="permBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3>➕ 新增使用者</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">姓名 <span>*</span></label><input class="form-input" placeholder="請輸入姓名" id="newName"/></div>
+        <div class="form-group"><label class="form-label">Email <span>*</span></label><input class="form-input" type="email" placeholder="請輸入 Email" id="newEmail"/></div>
+        <div class="form-group"><label class="form-label">角色 <span>*</span></label><select class="form-input" id="newRole"><option>倉管人員</option><option>唯讀人員</option><option>系統管理員</option></select></div>
+        <div class="form-group"><label class="form-label">倉庫權限</label><select class="form-input" id="newWh"><option>全部倉庫</option><option>大溪倉</option><option>大肚倉</option><option>岡山倉</option></select></div>
+        <div class="form-group form-full"><label class="form-label">初始密碼 <span>*</span></label><input class="form-input" type="password" placeholder="請設定初始密碼" id="newPwd"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">取消</button>
+      <button class="btn-save" onclick="addUser()">✓ 確認新增</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const d=new Date();const days=['日','一','二','三','四','五','六'];
+document.getElementById('topbarDate').textContent=`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} (週${days[d.getDay()]})`;
+const roleStyle={'系統管理員':{bg:'rgba(224,58,47,0.12)',c:'#e03a2f'},'倉管人員':{bg:'rgba(74,144,217,0.12)',c:'#4a90d9'},'唯讀人員':{bg:'rgba(155,109,255,0.12)',c:'#9b6dff'}};
+const avatarColors=['linear-gradient(135deg,#e03a2f,#a01e15)','linear-gradient(135deg,#4a90d9,#2d6db0)','linear-gradient(135deg,#3dba7e,#2a9960)','linear-gradient(135deg,#9b6dff,#6b3fd4)','linear-gradient(135deg,#f5a623,#c07d0a)','linear-gradient(135deg,#4a90d9,#9b6dff)'];
+let users=[
+  {name:'黃小翰',email:'huang@jj.com.tw',role:'系統管理員',wh:'全部倉庫',lastLogin:'今日 09:12',active:true},
+  {name:'陳小華',email:'chen@jj.com.tw',role:'倉管人員',wh:'大溪倉、大肚倉',lastLogin:'今日 08:45',active:true},
+  {name:'李大明',email:'lee@jj.com.tw',role:'倉管人員',wh:'岡山倉',lastLogin:'昨日 17:30',active:true},
+  {name:'王芳芳',email:'wang@jj.com.tw',role:'唯讀人員',wh:'全部倉庫',lastLogin:'03/08 14:20',active:true},
+  {name:'林志遠',email:'lin@jj.com.tw',role:'倉管人員',wh:'大溪倉',lastLogin:'03/07 10:00',active:true},
+  {name:'張美玲',email:'chang@jj.com.tw',role:'唯讀人員',wh:'大肚倉',lastLogin:'02/20 11:05',active:false},
+];
+function renderUsers(){
+  document.getElementById('userBody').innerHTML=users.map((u,i)=>{
+    const rs=roleStyle[u.role];
+    return `<tr><td><div class="u-info"><div class="u-avatar" style="background:${avatarColors[i%avatarColors.length]}">${u.name[0]}</div><div><div class="u-name">${u.name}</div><div class="u-email">${u.email}</div></div></div></td><td><span class="role-badge" style="background:${rs.bg};color:${rs.c}">${u.role}</span></td><td style="color:var(--muted);font-size:12px">${u.wh}</td><td style="color:var(--muted);font-size:12px">${u.lastLogin}</td><td><span class="status-dot" style="background:${u.active?'var(--green)':'var(--muted)'}"></span>${u.active?'啟用中':'已停用'}</td><td style="text-align:right;white-space:nowrap"><button class="action-btn" onclick="showToast('✏️ 編輯 ${u.name} 帳號')" title="編輯">✏️</button> <button class="action-btn" onclick="toggleUser(${i})" title="${u.active?'停用':'啟用'}">${u.active?'🔒':'🔓'}</button> <button class="action-btn danger" onclick="showToast('🗑 已移除 ${u.name}')" title="刪除">🗑</button></td></tr>`;
+  }).join('');
+  document.getElementById('kActive').textContent=users.filter(u=>u.active).length;
+  document.getElementById('kInactive').textContent=users.filter(u=>!u.active).length;
+}
+function toggleUser(i){users[i].active=!users[i].active;renderUsers();showToast(`${users[i].active?'✅ 已啟用':'🔒 已停用'} ${users[i].name} 的帳號`);}
+const perms=[
+  {group:'儀表板',name:'查看儀表板',admin:true,staff:true,ro:true},
+  {group:'商品管理',name:'查看商品',admin:true,staff:true,ro:true},
+  {group:'商品管理',name:'新增／編輯商品',admin:true,staff:true,ro:false},
+  {group:'商品管理',name:'刪除商品',admin:true,staff:false,ro:false},
+  {group:'庫存查詢',name:'查詢庫存',admin:true,staff:true,ro:true},
+  {group:'入出庫作業',name:'建立入庫單',admin:true,staff:true,ro:false},
+  {group:'入出庫作業',name:'建立出庫單',admin:true,staff:true,ro:false},
+  {group:'入出庫作業',name:'調撥作業',admin:true,staff:'partial',ro:false},
+  {group:'入出庫作業',name:'查看異動紀錄',admin:true,staff:true,ro:true},
+  {group:'警示與報表',name:'低庫存警示',admin:true,staff:true,ro:true},
+  {group:'警示與報表',name:'報表匯出',admin:true,staff:true,ro:false},
+  {group:'警示與報表',name:'盤點作業',admin:true,staff:'partial',ro:false},
+  {group:'系統管理',name:'權限管理',admin:true,staff:false,ro:false},
+  {group:'系統管理',name:'操作紀錄',admin:true,staff:false,ro:false},
+  {group:'系統管理',name:'倉庫設定',admin:true,staff:false,ro:false},
+];
+function renderPerms(){
+  const icon=v=>v===true?'<span class="check-on">✓</span>':v==='partial'?'<span class="check-partial">△</span>':'<span class="check-off">—</span>';
+  let lastGroup='';let html='';
+  perms.forEach(p=>{
+    if(p.group!==lastGroup){html+=`<tr class="perm-group-row"><td colspan="4">${p.group}</td></tr>`;lastGroup=p.group;}
+    html+=`<tr><td style="padding-left:20px">${p.name}</td><td>${icon(p.admin)}</td><td>${icon(p.staff)}</td><td>${icon(p.ro)}</td></tr>`;
+  });
+  document.getElementById('permBody').innerHTML=html;
+}
+function openModal(){document.getElementById('modalOverlay').classList.add('show');}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('show');}
+function addUser(){
+  const name=document.getElementById('newName').value.trim();
+  const email=document.getElementById('newEmail').value.trim();
+  if(!name||!email){alert('請填寫姓名與 Email');return;}
+  users.push({name,email,role:document.getElementById('newRole').value,wh:document.getElementById('newWh').value,lastLogin:'未曾登入',active:true});
+  renderUsers();closeModal();showToast(`✅ 已新增使用者 ${name}！`);
+}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+renderUsers();renderPerms();
+</script>
+
+<script>
+// ── Session 守衛 + 角色存取控制 ──
+(function(){
+  const ok = JJ.guardPage('jj-users');
+  if (!ok) return;
+  const _u = JJ.getUser();
+  // 更新側欄使用者名稱
+  document.querySelectorAll('.user-name').forEach(el => el.textContent = _u ? _u.name : '');
+  document.querySelectorAll('.user-role').forEach(el => el.textContent = _u ? _u.role : '');
+  document.querySelectorAll('.user-avatar').forEach(el => { if(_u) el.textContent=_u.name[0]; });
+  // Session 活動更新（滑鼠移動、點擊）
+  ['mousemove','click','keydown','scroll'].forEach(ev =>
+    document.addEventListener(ev, () => JJ.touchSession(), {passive:true, once:false})
+  );
+})();
+</script>
+
+</body>
+</html>

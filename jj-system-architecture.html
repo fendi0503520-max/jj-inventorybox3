@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JJ 簡易庫存管理系統 — 系統架構</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f4f8;
+  --panel:#ffffff;
+  --card:#ffffff;
+  --border:rgba(0,0,0,0.06);
+  --red:#e03a2f;
+  --blue:#1d6fb8;
+  --green:#1a9e5c;
+  --yellow:#f5a623;
+  --purple:#9b6dff;
+  --text:#1a2535;
+  --muted:#64748b;
+  --muted2:#4b5563;
+}
+body{
+  background:var(--bg);
+  font-family:'Noto Sans TC',sans-serif;
+  color:var(--text);
+  min-height:100vh;
+  padding:40px 24px 60px;
+}
+
+/* Header */
+.header{
+  text-align:center;
+  margin-bottom:48px;
+  animation:fadeUp .6s ease both;
+}
+.header-logo{
+  display:inline-flex;align-items:center;gap:12px;
+  margin-bottom:16px;
+}
+.jj-icon{
+  width:48px;height:48px;border-radius:12px;
+  background:linear-gradient(135deg,#e03a2f,#a01e15);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:900;letter-spacing:-2px;color:#fff;
+  box-shadow:0 4px 16px rgba(224,58,47,0.4);
+}
+.header h1{font-size:28px;font-weight:700;letter-spacing:.04em;}
+.header p{color:var(--muted);font-size:14px;margin-top:6px;}
+.badge{
+  display:inline-block;margin-top:12px;
+  padding:4px 14px;border-radius:20px;
+  background:rgba(224,58,47,0.12);
+  border:1px solid rgba(224,58,47,0.3);
+  font-size:12px;color:var(--red);letter-spacing:.06em;
+}
+
+/* Phase sections */
+.phases{display:flex;flex-direction:column;gap:32px;max-width:1100px;margin:0 auto;}
+
+.phase{
+  border:1px solid var(--border);
+  border-radius:16px;
+  overflow:hidden;
+  animation:fadeUp .5s ease both;
+}
+.phase:nth-child(1){animation-delay:.1s;}
+.phase:nth-child(2){animation-delay:.2s;}
+.phase:nth-child(3){animation-delay:.3s;}
+.phase:nth-child(4){animation-delay:.4s;}
+
+.phase-header{
+  display:flex;align-items:center;gap:14px;
+  padding:18px 24px;
+  border-bottom:1px solid var(--border);
+}
+.phase-num{
+  width:32px;height:32px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:700;flex-shrink:0;
+}
+.phase-title{font-size:16px;font-weight:700;}
+.phase-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.phase-tag{
+  margin-left:auto;padding:3px 12px;border-radius:20px;
+  font-size:11px;font-weight:500;white-space:nowrap;
+}
+
+.phase-body{
+  padding:20px 24px;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:12px;
+}
+
+/* Feature cards */
+.feat{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:16px;
+  transition:transform .2s,border-color .2s;
+}
+.feat:hover{transform:translateY(-2px);border-color:rgba(255,255,255,0.16);}
+.feat-icon{font-size:22px;margin-bottom:10px;}
+.feat-name{font-size:14px;font-weight:600;margin-bottom:5px;}
+.feat-desc{font-size:12px;color:var(--muted);line-height:1.6;}
+.feat-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;}
+.feat-tag{
+  padding:2px 8px;border-radius:10px;
+  font-size:10px;font-weight:500;
+}
+
+/* Colors per phase */
+.ph1 .phase-header{background:rgba(224,58,47,0.06);}
+.ph1 .phase-num{background:rgba(224,58,47,0.15);color:var(--red);}
+.ph1 .phase-tag{background:rgba(224,58,47,0.12);color:var(--red);}
+.ph1 .feat{border-top:2px solid var(--red);}
+
+.ph2 .phase-header{background:rgba(74,144,217,0.06);}
+.ph2 .phase-num{background:rgba(74,144,217,0.15);color:var(--blue);}
+.ph2 .phase-tag{background:rgba(74,144,217,0.12);color:var(--blue);}
+.ph2 .feat{border-top:2px solid var(--blue);}
+
+.ph3 .phase-header{background:rgba(61,186,126,0.06);}
+.ph3 .phase-num{background:rgba(61,186,126,0.15);color:var(--green);}
+.ph3 .phase-tag{background:rgba(61,186,126,0.12);color:var(--green);}
+.ph3 .feat{border-top:2px solid var(--green);}
+
+.ph4 .phase-header{background:rgba(155,109,255,0.06);}
+.ph4 .phase-num{background:rgba(155,109,255,0.15);color:var(--purple);}
+.ph4 .phase-tag{background:rgba(155,109,255,0.12);color:var(--purple);}
+.ph4 .feat{border-top:2px solid var(--purple);}
+
+/* Tag colors */
+.tag-red{background:rgba(224,58,47,0.12);color:#f87171;}
+.tag-blue{background:rgba(74,144,217,0.12);color:#60a5fa;}
+.tag-green{background:rgba(61,186,126,0.12);color:#34d399;}
+.tag-yellow{background:rgba(245,166,35,0.12);color:#fbbf24;}
+.tag-purple{background:rgba(155,109,255,0.12);color:#c4b5fd;}
+
+/* Role section */
+.roles-section{
+  max-width:1100px;margin:32px auto 0;
+  border:1px solid var(--border);border-radius:16px;overflow:hidden;
+  animation:fadeUp .5s .45s ease both;
+}
+.roles-header{
+  padding:18px 24px;border-bottom:1px solid var(--border);
+  background:rgba(245,166,35,0.06);
+  display:flex;align-items:center;gap:12px;
+}
+.roles-num{width:32px;height:32px;border-radius:8px;background:rgba(245,166,35,0.15);color:var(--yellow);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;}
+.roles-body{padding:20px 24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
+.role-card{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:16px;border-top:2px solid var(--yellow);
+}
+.role-icon{font-size:24px;margin-bottom:8px;}
+.role-name{font-size:14px;font-weight:700;margin-bottom:8px;}
+.role-perms{list-style:none;display:flex;flex-direction:column;gap:4px;}
+.role-perms li{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+.role-perms li::before{content:'✓';color:var(--green);font-size:11px;}
+.role-perms li.no::before{content:'✗';color:var(--red);}
+
+/* Flow diagram */
+.flow-section{
+  max-width:1100px;margin:32px auto 0;
+  border:1px solid var(--border);border-radius:16px;overflow:hidden;
+  animation:fadeUp .5s .55s ease both;
+}
+.flow-header{
+  padding:18px 24px;border-bottom:1px solid var(--border);
+  background:rgba(61,186,126,0.04);
+  display:flex;align-items:center;gap:12px;
+}
+.flow-body{padding:28px 24px;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;}
+.flow-node{
+  background:var(--card);border:1px solid var(--border);border-radius:10px;
+  padding:12px 16px;text-align:center;min-width:110px;
+}
+.flow-node .fn-icon{font-size:20px;margin-bottom:4px;}
+.flow-node .fn-label{font-size:12px;font-weight:600;}
+.flow-node .fn-sub{font-size:10px;color:var(--muted);margin-top:2px;}
+.flow-arrow{font-size:18px;color:var(--muted2);}
+.flow-node.active{border-color:var(--green);background:rgba(61,186,126,0.08);}
+
+/* Stats bar */
+.stats{
+  max-width:1100px;margin:32px auto 0;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;
+  animation:fadeUp .5s .6s ease both;
+}
+.stat-card{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:16px 20px;display:flex;align-items:center;gap:14px;
+}
+.stat-icon{font-size:24px;}
+.stat-num{font-size:22px;font-weight:700;}
+.stat-label{font-size:11px;color:var(--muted);margin-top:2px;}
+
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(20px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+/* Responsive */
+@media(max-width:600px){
+  .phase-body{grid-template-columns:1fr;}
+  .flow-body{flex-direction:column;}
+  .flow-arrow{transform:rotate(90deg);}
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-logo">
+    <div class="jj-icon">JJ</div>
+    <div style="text-align:left">
+      <div style="font-size:20px;font-weight:700;">JJ 簡易庫存管理系統</div>
+      <div style="font-size:12px;color:var(--muted);">倉儲／物流專用版</div>
+    </div>
+  </div>
+  <p>完整系統功能架構規劃 — 共 4 個開發階段 · 22 項核心功能</p>
+  <span class="badge">系統架構藍圖 v1.0</span>
+</div>
+
+<!-- Stats -->
+<div class="stats">
+  <div class="stat-card"><span class="stat-icon">📦</span><div><div class="stat-num" style="color:var(--red)">4</div><div class="stat-label">開發階段</div></div></div>
+  <div class="stat-card"><span class="stat-icon">⚙️</span><div><div class="stat-num" style="color:var(--blue)">22</div><div class="stat-label">核心功能</div></div></div>
+  <div class="stat-card"><span class="stat-icon">👥</span><div><div class="stat-num" style="color:var(--green)">3</div><div class="stat-label">使用者角色</div></div></div>
+  <div class="stat-card"><span class="stat-icon">🏭</span><div><div class="stat-num" style="color:var(--yellow)">多</div><div class="stat-label">倉庫支援</div></div></div>
+  <div class="stat-card"><span class="stat-icon">📊</span><div><div class="stat-num" style="color:var(--purple)">即時</div><div class="stat-label">庫存監控</div></div></div>
+</div>
+
+<!-- Phase 1 -->
+<div class="phases" style="margin-top:32px;">
+
+<div class="phase ph1">
+  <div class="phase-header">
+    <div class="phase-num">1</div>
+    <div>
+      <div class="phase-title">基礎核心模組</div>
+      <div class="phase-sub">系統骨幹，優先建置</div>
+    </div>
+    <span class="phase-tag">已完成：登入頁面</span>
+  </div>
+  <div class="phase-body">
+    <div class="feat">
+      <div class="feat-icon">🔐</div>
+      <div class="feat-name">登入 / 登出系統</div>
+      <div class="feat-desc">帳號密碼驗證、記住我、忘記密碼、登入紀錄</div>
+      <div class="feat-tags"><span class="feat-tag tag-green">✅ 已完成</span></div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🏠</div>
+      <div class="feat-name">首頁儀表板</div>
+      <div class="feat-desc">庫存總覽、今日入出庫數、低庫存警示、快速操作入口</div>
+      <div class="feat-tags"><span class="feat-tag tag-red">優先</span></div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">📦</div>
+      <div class="feat-name">商品主檔管理</div>
+      <div class="feat-desc">新增、編輯、刪除商品；商品編號、品名、規格、單位、安全庫存量</div>
+      <div class="feat-tags"><span class="feat-tag tag-red">優先</span></div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🏷️</div>
+      <div class="feat-name">商品分類管理</div>
+      <div class="feat-desc">自訂分類標籤，快速篩選商品類別</div>
+      <div class="feat-tags"><span class="feat-tag tag-blue">基礎</span></div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🔍</div>
+      <div class="feat-name">庫存查詢</div>
+      <div class="feat-desc">即時庫存數量查詢、關鍵字搜尋、多條件篩選</div>
+      <div class="feat-tags"><span class="feat-tag tag-red">優先</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Phase 2 -->
+<div class="phase ph2">
+  <div class="phase-header">
+    <div class="phase-num">2</div>
+    <div>
+      <div class="phase-title">入出庫作業模組</div>
+      <div class="phase-sub">倉儲日常核心操作</div>
+    </div>
+    <span class="phase-tag">您的首要需求</span>
+  </div>
+  <div class="phase-body">
+    <div class="feat">
+      <div class="feat-icon">📥</div>
+      <div class="feat-name">入庫作業</div>
+      <div class="feat-desc">單筆 / 批次入庫、選擇供應商、入庫日期、數量、備註、自動更新庫存</div>
+      <div class="feat-tags"><span class="feat-tag tag-red">優先</span></div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">📤</div>
+      <div class="feat-name">出庫作業</div>
+      <div class="feat-desc">單筆 / 批次出庫、選擇客戶、出庫日期、數量不足警示</div>
+      <div class="feat-tags"><span class="feat-tag tag-red">優先</span></div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">📋</div>
+      <div class="feat-name">異動紀錄查詢</div>
+      <div class="feat-desc">完整入出庫歷史、依日期 / 品項 / 人員篩選、時間戳記</div>
+      <div class="feat-tags"><span class="feat-tag tag-red">優先</span></div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🔔</div>
+      <div class="feat-name">低庫存警示</div>
+      <div class="feat-desc">低於安全庫存自動標紅、首頁待補貨清單、Email 通知</div>
+      <div class="feat-tags"><span class="feat-tag tag-red">優先</span></div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🔄</div>
+      <div class="feat-name">調撥作業</div>
+      <div class="feat-desc">倉庫間商品調撥、調撥單簽核流程</div>
+      <div class="feat-tags"><span class="feat-tag tag-blue">物流專用</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Phase 3 -->
+<div class="phase ph3">
+  <div class="phase-header">
+    <div class="phase-num">3</div>
+    <div>
+      <div class="phase-title">報表與分析模組</div>
+      <div class="phase-sub">數據輸出、管理決策支援</div>
+    </div>
+    <span class="phase-tag">您的首要需求</span>
+  </div>
+  <div class="phase-body">
+    <div class="feat">
+      <div class="feat-icon">📊</div>
+      <div class="feat-name">庫存報表</div>
+      <div class="feat-desc">即時庫存明細表、期初 / 期末庫存、庫存金額統計</div>
+      <div class="feat-tags"><span class="feat-tag tag-red">優先</span></div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">📈</div>
+      <div class="feat-name">進出貨報表</div>
+      <div class="feat-desc">月結進出貨統計、趨勢圖表、品項排行</div>
+      <div class="feat-tags"><span class="feat-tag tag-red">優先</span></div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">⬇️</div>
+      <div class="feat-name">匯出功能</div>
+      <div class="feat-desc">Excel（.xlsx）/ PDF 兩種格式，可自訂匯出欄位與日期區間</div>
+      <div class="feat-tags"><span class="feat-tag tag-red">優先</span><span class="feat-tag tag-green">Excel</span><span class="feat-tag tag-blue">PDF</span></div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🗂️</div>
+      <div class="feat-name">盤點作業</div>
+      <div class="feat-desc">定期盤點、系統庫存 vs 實際庫存差異報告、盤盈盤虧調整</div>
+      <div class="feat-tags"><span class="feat-tag tag-yellow">倉儲必備</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Phase 4 -->
+<div class="phase ph4">
+  <div class="phase-header">
+    <div class="phase-num">4</div>
+    <div>
+      <div class="phase-title">進階管理模組</div>
+      <div class="phase-sub">系統安全、擴充與自動化</div>
+    </div>
+    <span class="phase-tag">您的首要需求</span>
+  </div>
+  <div class="phase-body">
+    <div class="feat">
+      <div class="feat-icon">👥</div>
+      <div class="feat-name">權限管理</div>
+      <div class="feat-desc">管理員 / 倉管人員 / 唯讀 三種角色，功能層級存取控制</div>
+      <div class="feat-tags"><span class="feat-tag tag-red">優先</span></div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">📝</div>
+      <div class="feat-name">操作紀錄 Log</div>
+      <div class="feat-desc">完整操作稽核軌跡，誰在何時做了什麼變更</div>
+      <div class="feat-tags"><span class="feat-tag tag-purple">安全</span></div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🏭</div>
+      <div class="feat-name">多倉庫管理</div>
+      <div class="feat-desc">大溪倉 / 大肚倉分開管理、跨倉庫庫存彙總查詢</div>
+      <div class="feat-tags"><span class="feat-tag tag-blue">物流專用</span></div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🚚</div>
+      <div class="feat-name">供應商管理</div>
+      <div class="feat-desc">廠商資料建檔、採購紀錄、聯絡資訊</div>
+      <div class="feat-tags"><span class="feat-tag tag-yellow">擴充</span></div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">📱</div>
+      <div class="feat-name">行動裝置介面</div>
+      <div class="feat-desc">手機 / 平板響應式介面，倉庫現場可用手機操作</div>
+      <div class="feat-tags"><span class="feat-tag tag-purple">便利</span></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /phases -->
+
+<!-- 使用者角色 -->
+<div class="roles-section">
+  <div class="roles-header">
+    <div class="roles-num">👥</div>
+    <div>
+      <div style="font-size:16px;font-weight:700;">使用者角色與權限</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px;">三種角色，對應不同操作權限</div>
+    </div>
+  </div>
+  <div class="roles-body">
+    <div class="role-card">
+      <div class="role-icon">👑</div>
+      <div class="role-name" style="color:var(--red)">系統管理員</div>
+      <ul class="role-perms">
+        <li>所有功能完整存取</li>
+        <li>新增 / 刪除使用者</li>
+        <li>系統設定與參數</li>
+        <li>查看操作紀錄 Log</li>
+        <li>匯出所有報表</li>
+      </ul>
+    </div>
+    <div class="role-card">
+      <div class="role-icon">🧑‍🏭</div>
+      <div class="role-name" style="color:var(--blue)">倉管人員</div>
+      <ul class="role-perms">
+        <li>入庫 / 出庫作業</li>
+        <li>商品查詢與編輯</li>
+        <li>異動紀錄查詢</li>
+        <li>匯出個人報表</li>
+        <li class="no">使用者管理（無）</li>
+      </ul>
+    </div>
+    <div class="role-card">
+      <div class="role-icon">👀</div>
+      <div class="role-name" style="color:var(--green)">唯讀查詢者</div>
+      <ul class="role-perms">
+        <li>庫存查詢</li>
+        <li>報表檢視</li>
+        <li class="no">入出庫操作（無）</li>
+        <li class="no">商品新增刪除（無）</li>
+        <li class="no">使用者管理（無）</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- 作業流程 -->
+<div class="flow-section">
+  <div class="flow-header">
+    <div style="width:32px;height:32px;border-radius:8px;background:rgba(61,186,126,0.15);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:16px;">🔄</div>
+    <div>
+      <div style="font-size:16px;font-weight:700;">標準入出庫作業流程</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px;">倉儲日常操作標準流程</div>
+    </div>
+  </div>
+  <div class="flow-body">
+    <div class="flow-node">
+      <div class="fn-icon">🔐</div>
+      <div class="fn-label">人員登入</div>
+      <div class="fn-sub">身份驗證</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node active">
+      <div class="fn-icon">📋</div>
+      <div class="fn-label">選擇作業</div>
+      <div class="fn-sub">入庫 / 出庫</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">
+      <div class="fn-icon">🔍</div>
+      <div class="fn-label">選擇商品</div>
+      <div class="fn-sub">搜尋 / 掃碼</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">
+      <div class="fn-icon">✏️</div>
+      <div class="fn-label">填寫數量</div>
+      <div class="fn-sub">輸入明細</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">
+      <div class="fn-icon">✅</div>
+      <div class="fn-label">確認送出</div>
+      <div class="fn-sub">系統寫入</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node active">
+      <div class="fn-icon">📊</div>
+      <div class="fn-label">庫存更新</div>
+      <div class="fn-sub">即時同步</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">
+      <div class="fn-icon">🔔</div>
+      <div class="fn-label">警示判斷</div>
+      <div class="fn-sub">低庫存通知</div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div style="text-align:center;margin-top:48px;color:var(--muted2);font-size:12px;animation:fadeUp .5s .7s ease both;">
+  JJ 簡易庫存管理系統 &nbsp;·&nbsp; 系統架構藍圖 v1.0 &nbsp;·&nbsp; 倉儲／物流專用版
+</div>
+
+</body>
+</html>

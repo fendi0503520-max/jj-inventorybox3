@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<script src="shared_store.js"></script>
+
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JJ 簡易庫存管理系統 — 庫存查詢</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f4f8;--sidebar:#ffffff;--panel:#ffffff;--card:#ffffff;
+  --border:rgba(0,0,0,0.09);--border2:rgba(0,0,0,0.15);
+  --red:#e03a2f;--red-dim:rgba(220,38,38,0.08);
+  --blue:#1d6fb8;--blue-dim:rgba(29,111,184,0.08);
+  --green:#1a9e5c;--green-dim:rgba(26,158,92,0.08);
+  --yellow:#f5a623;--yellow-dim:rgba(217,119,6,0.08);
+  --purple:#9b6dff;
+  --text:#1a2535;--muted:#64748b;--muted2:#e2e8f0;
+}
+body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans TC',sans-serif;color:var(--text);font-size:14px;}
+.sidebar{width:220px;flex-shrink:0;background:var(--sidebar);border-right:1px solid var(--border);box-shadow:2px 0 12px rgba(0,0,0,0.06);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;}
+.sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px;}
+.jj-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#e03a2f,#a01e15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;box-shadow:0 4px 12px rgba(224,58,47,0.35);flex-shrink:0;}
+.logo-text{font-size:13px;font-weight:700;color:#1a2535;}.logo-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+.nav{flex:1;padding:16px 0;overflow-y:auto;}
+.nav-section{font-size:10px;color:var(--muted);letter-spacing:.1em;padding:12px 20px 6px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;color:#64748b;font-size:13px;font-weight:500;border-left:3px solid transparent;transition:all .2s;}
+.nav-item:hover{color:var(--text);background:rgba(0,0,0,0.03);}
+.nav-item.active{color:var(--red);background:rgba(220,38,38,0.06);border-left-color:var(--red);}
+.nav-icon{font-size:16px;width:20px;text-align:center;}
+.nav-badge{margin-left:auto;padding:1px 7px;border-radius:10px;background:var(--red);color:#fff;font-size:10px;font-weight:700;}
+.sidebar-user{padding:16px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+.user-name{font-size:13px;font-weight:600;}.user-role{font-size:10px;color:var(--muted);margin-top:1px;}
+.user-logout{margin-left:auto;color:var(--muted);font-size:16px;cursor:pointer;transition:color .2s;}
+.user-logout:hover{color:var(--red);}
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;}
+.topbar{height:60px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:16px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:16px;font-weight:700;}.topbar-breadcrumb{font-size:12px;color:var(--muted);margin-left:4px;}
+.topbar-date{margin-left:auto;font-size:12px;color:var(--muted);}
+.topbar-notif{width:34px;height:34px;border-radius:8px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;font-size:16px;}
+.notif-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--red);border:2px solid var(--panel);}
+.content{padding:28px;flex:1;}
+
+/* Filter card */
+.filter-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px;animation:fadeUp .3s ease both;}
+.filter-title{font-size:13px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:6px;}
+.filter-row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;}
+.filter-group{display:flex;flex-direction:column;gap:5px;min-width:160px;}
+.filter-label{font-size:11px;color:var(--muted);font-weight:500;letter-spacing:.04em;text-transform:uppercase;}
+.filter-input{padding:8px 12px;background:rgba(0,0,0,0.03);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color .2s;}
+.filter-input:focus{border-color:var(--blue);}
+.filter-input::placeholder{color:var(--muted2);}
+select.filter-input{cursor:pointer;}
+.search-wide{flex:1;min-width:220px;}
+.btn-search{padding:9px 20px;border-radius:9px;background:linear-gradient(135deg,var(--blue),#2d6db0);color:#fff;border:none;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;align-self:flex-end;transition:transform .15s,box-shadow .15s;}
+.btn-search:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(74,144,217,0.3);}
+.btn-reset{padding:9px 16px;border-radius:9px;background:var(--panel);border:1px solid var(--border);color:var(--muted);font-size:13px;font-family:inherit;cursor:pointer;align-self:flex-end;transition:all .2s;}
+.btn-reset:hover{color:var(--text);}
+
+/* KPI row */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;}
+.kpi-mini{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;animation:fadeUp .3s ease both;text-align:center;}
+.kpi-mini:nth-child(1){animation-delay:.05s;}.kpi-mini:nth-child(2){animation-delay:.1s;}.kpi-mini:nth-child(3){animation-delay:.15s;}.kpi-mini:nth-child(4){animation-delay:.2s;}.kpi-mini:nth-child(5){animation-delay:.25s;}
+.kpi-v{font-size:24px;font-weight:700;margin-bottom:4px;}
+.kpi-l{font-size:11px;color:var(--muted);}
+
+/* Table */
+.table-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;animation:fadeUp .4s .25s ease both;}
+.table-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.table-title{font-size:14px;font-weight:700;}
+.btn-export{padding:7px 14px;border-radius:8px;background:var(--green-dim);color:var(--green);border:1px solid rgba(61,186,126,0.2);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;}
+.btn-export:hover{background:rgba(61,186,126,0.2);}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+thead tr{background:rgba(0,0,0,0.025);}
+th{padding:11px 16px;font-size:11px;font-weight:600;color:var(--muted);text-align:left;letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;}
+th:hover{color:var(--text);}
+th .sort-icon{margin-left:4px;opacity:.4;}
+th.sorted .sort-icon{opacity:1;}
+td{padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:rgba(0,0,0,0.02);}
+.prod-name{font-weight:600;}.prod-code{font-size:11px;color:var(--muted);margin-top:1px;}
+.cat-badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:500;}
+.level-bar{display:flex;align-items:center;gap:8px;}
+.bar-bg{height:6px;border-radius:3px;background:var(--muted2);width:90px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:3px;}
+.stock-pct{font-size:11px;color:var(--muted);width:35px;}
+.status-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600;}
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);}
+.page-info{font-size:12px;color:var(--muted);}
+.page-btns{display:flex;gap:6px;}
+.page-btn{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--muted);transition:all .15s;}
+.page-btn:hover{border-color:var(--border2);color:var(--text);}
+.page-btn.active{background:var(--red);border-color:var(--red);color:#fff;}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+@media(max-width:900px){.kpi-row{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:640px){.sidebar{display:none;}.main{margin-left:0;}.kpi-row{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="jj-icon">JJ</div>
+    <div><div class="logo-text">JJ 庫存系統</div><div class="logo-sub">倉儲／物流版</div></div>
+  </div>
+    <nav class="nav">
+    <div class="nav-section">主選單</div>
+    <div class="nav-item" onclick="location.href='jj-dashboard.html'"><span class="nav-icon">🏠</span> 儀表板</div>
+    <div class="nav-item" onclick="location.href='jj-products.html'"><span class="nav-icon">📦</span> 商品管理</div>
+    <div class="nav-item" onclick="location.href='jj-stock.html'" ><span class="nav-icon">🔍</span> 庫存查詢</div>
+    <div class="nav-section">入出庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-inbound.html'"><span class="nav-icon">📥</span> 入庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-outbound.html'"><span class="nav-icon">📤</span> 出庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-transfer.html'"><span class="nav-icon">🔄</span> 調撥作業</div>
+    <div class="nav-item" onclick="location.href='jj-logs.html'"><span class="nav-icon">📋</span> 異動紀錄</div>
+    <div class="nav-section">分析</div>
+    <div class="nav-item" onclick="location.href='jj-warroom.html'"><span class="nav-icon">🎯</span> 戰情室</div>
+    <div class="nav-section">警示與報表</div>
+    <div class="nav-item" onclick="location.href='jj-alerts.html'"><span class="nav-icon">🔔</span> 低庫存警示<span class="nav-badge" id="navBadge">0</span></div>
+    <div class="nav-item" onclick="location.href='jj-inventory.html'"><span class="nav-icon">🗂️</span> 盤點作業</div>
+    <div class="nav-item" onclick="location.href='jj-reports.html'"><span class="nav-icon">📊</span> 報表匯出</div>
+    <div class="nav-section">工具</div>
+    <div class="nav-item" onclick="location.href='jj-qrcode.html'"><span class="nav-icon">🔲</span> QR Code</div>
+    <div class="nav-section">系統管理</div>
+    <div class="nav-item" onclick="location.href='jj-users.html'"><span class="nav-icon">👥</span> 權限管理</div>
+    <div class="nav-item" onclick="location.href='jj-oplog.html'"><span class="nav-icon">📝</span> 操作紀錄</div>
+    <div class="nav-item" onclick="location.href='jj-warehouse.html'"><span class="nav-icon">🏭</span> 倉庫設定</div>
+    <div class="nav-section">帳號</div>
+    <div class="nav-item" onclick="location.href='jj-profile.html'"><span class="nav-icon">👤</span> 帳號設定</div>
+  </nav>
+  <div class="sidebar-user">
+    <div class="user-avatar">黃</div>
+    <div><div class="user-name">黃小翰</div><div class="user-role">系統管理員</div></div>
+    <div class="user-logout" onclick="if(confirm('確定要登出嗎？')){JJ.addLog({type:'登入/登出',prod:'—',wh:'—',chg:'—',before:'—',after:'—',user:(JJ.getUser()||{}).name||'',doc:'—',note:'使用者登出系統'});JJ.clearUser();location.href='login.html';}" style="cursor:pointer">⏻</div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div><span class="topbar-title">庫存查詢</span><span class="topbar-breadcrumb">/ 即時庫存</span></div>
+    <div class="topbar-date" id="topbarDate"></div>
+    <div class="topbar-notif">🔔<div class="notif-dot"></div></div>
+  </div>
+
+  <div class="content">
+
+    <!-- Filter -->
+    <div class="filter-card">
+      <div class="filter-title">🔍 查詢條件</div>
+      <div class="filter-row">
+        <div class="filter-group search-wide">
+          <div class="filter-label">商品名稱／編號／條碼</div>
+          <input type="text" class="filter-input" placeholder="輸入關鍵字搜尋…" id="q"/>
+        </div>
+        <div class="filter-group">
+          <div class="filter-label">商品分類</div>
+          <select class="filter-input" id="fCat">
+            <option value="">全部</option>
+            <option>包裝材料</option><option>棧板設備</option>
+            <option>搬運工具</option><option>倉儲耗材</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <div class="filter-label">所在倉庫</div>
+          <select class="filter-input" id="fWh">
+            <option value="">全部倉庫</option>
+            <option>大溪倉</option><option>大肚倉</option><option>岡山倉</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <div class="filter-label">庫存狀態</div>
+          <select class="filter-input" id="fSt">
+            <option value="">全部狀態</option>
+            <option value="正常">正常</option>
+            <option value="低庫存">低庫存</option>
+            <option value="停用">停用</option>
+          </select>
+        </div>
+        <button class="btn-search" onclick="doFilter()">查 詢</button>
+        <button class="btn-reset" onclick="resetFilter()">重置</button>
+      </div>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-row">
+      <div class="kpi-mini"><div class="kpi-v" style="color:var(--blue)" id="kTotal">12</div><div class="kpi-l">查詢結果</div></div>
+      <div class="kpi-mini"><div class="kpi-v" style="color:var(--green)" id="kNormal">7</div><div class="kpi-l">正常庫存</div></div>
+      <div class="kpi-mini"><div class="kpi-v" style="color:var(--red)" id="kLow">5</div><div class="kpi-l">低庫存</div></div>
+      <div class="kpi-mini"><div class="kpi-v" style="color:var(--muted)" id="kStop">1</div><div class="kpi-l">停用商品</div></div>
+      <div class="kpi-mini"><div class="kpi-v" style="color:var(--yellow)" id="kTotal2">416</div><div class="kpi-l">總庫存量</div></div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-title">📋 庫存明細</div>
+        <button class="btn-export">⬇ 匯出 Excel</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>商品資訊 <span class="sort-icon">↕</span></th>
+              <th>分類</th>
+              <th>倉庫</th>
+              <th>現有庫存 <span class="sort-icon sorted">↓</span></th>
+              <th>安全庫存</th>
+              <th>庫存水位</th>
+              <th>狀態</th>
+              <th>最後更新</th>
+            </tr>
+          </thead>
+          <tbody id="stockBody"></tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <div class="page-info" id="pageInfo"></div>
+        <div class="page-btns">
+          <div class="page-btn">‹</div>
+          <div class="page-btn active">1</div>
+          <div class="page-btn">2</div>
+          <div class="page-btn">›</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const d=new Date();const days=['日','一','二','三','四','五','六'];
+document.getElementById('topbarDate').textContent=`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} (週${days[d.getDay()]})`;
+
+const catColors={'包裝材料':{bg:'rgba(74,144,217,0.12)',c:'#4a90d9'},'棧板設備':{bg:'rgba(155,109,255,0.12)',c:'#9b6dff'},'搬運工具':{bg:'rgba(245,166,35,0.12)',c:'#f5a623'},'倉儲耗材':{bg:'rgba(61,186,126,0.12)',c:'#3dba7e'}};
+const products=[
+  {name:'防水膠帶 50mm',code:'PKG-001',cat:'包裝材料',unit:'捲',stock:12,safe:100,wh:'大溪倉',status:'低庫存',updated:'今日 14:32'},
+  {name:'棧板 120x100cm',code:'PLT-001',cat:'棧板設備',unit:'片',stock:8,safe:50,wh:'大肚倉',status:'低庫存',updated:'今日 11:48'},
+  {name:'紙箱 A4 尺寸',code:'PKG-002',cat:'包裝材料',unit:'個',stock:45,safe:200,wh:'大溪倉',status:'低庫存',updated:'今日 13:15'},
+  {name:'包裝泡棉 30mm',code:'PKG-003',cat:'包裝材料',unit:'捲',stock:38,safe:150,wh:'大溪倉',status:'低庫存',updated:'昨日 16:00'},
+  {name:'收縮膜 500m',code:'PKG-004',cat:'包裝材料',unit:'捲',stock:3,safe:20,wh:'大肚倉',status:'低庫存',updated:'今日 10:20'},
+  {name:'堆高機 3T',code:'EQP-001',cat:'搬運工具',unit:'台',stock:2,safe:1,wh:'大溪倉',status:'正常',updated:'03/08'},
+  {name:'手推車',code:'EQP-002',cat:'搬運工具',unit:'台',stock:8,safe:3,wh:'大溪倉',status:'正常',updated:'03/07'},
+  {name:'標籤紙 A6',code:'SUP-001',cat:'倉儲耗材',unit:'包',stock:120,safe:50,wh:'岡山倉',status:'正常',updated:'03/09'},
+  {name:'封箱機',code:'EQP-003',cat:'搬運工具',unit:'台',stock:3,safe:2,wh:'大肚倉',status:'正常',updated:'03/06'},
+  {name:'氣泡袋 30x40cm',code:'PKG-005',cat:'包裝材料',unit:'箱',stock:200,safe:80,wh:'大溪倉',status:'正常',updated:'今日 09:05'},
+  {name:'貨架 180cm',code:'STG-001',cat:'棧板設備',unit:'組',stock:15,safe:5,wh:'岡山倉',status:'正常',updated:'03/05'},
+  {name:'條碼掃描器',code:'EQP-004',cat:'搬運工具',unit:'台',stock:0,safe:2,wh:'大溪倉',status:'停用',updated:'03/01'},
+];
+
+function statusChip(s){
+  if(s==='正常') return `<span class="status-chip" style="background:var(--green-dim);color:var(--green)"><span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block"></span>正常</span>`;
+  if(s==='低庫存') return `<span class="status-chip" style="background:var(--red-dim);color:var(--red)"><span style="width:6px;height:6px;border-radius:50%;background:var(--red);display:inline-block"></span>低庫存</span>`;
+  return `<span class="status-chip" style="background:rgba(107,114,128,0.12);color:var(--muted)"><span style="width:6px;height:6px;border-radius:50%;background:var(--muted);display:inline-block"></span>停用</span>`;
+}
+function levelBar(stock,safe){
+  const pct=safe>0?Math.min(100,Math.round(stock/safe*100)):100;
+  const col=pct<30?'var(--red)':pct<70?'var(--yellow)':'var(--green)';
+  return `<div class="level-bar"><div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:${col}"></div></div><span class="stock-pct">${pct}%</span></div>`;
+}
+
+function render(data){
+  const tb=document.getElementById('stockBody');
+  const normal=data.filter(x=>x.status==='正常').length;
+  const low=data.filter(x=>x.status==='低庫存').length;
+  const stop=data.filter(x=>x.status==='停用').length;
+  const total=data.reduce((s,x)=>s+x.stock,0);
+  document.getElementById('kTotal').textContent=data.length;
+  document.getElementById('kNormal').textContent=normal;
+  document.getElementById('kLow').textContent=low;
+  document.getElementById('kStop').textContent=stop;
+  document.getElementById('kTotal2').textContent=total.toLocaleString();
+  document.getElementById('pageInfo').textContent=`共 ${data.length} 筆`;
+  if(!data.length){tb.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted)">查無符合條件的庫存資料</td></tr>`;return;}
+  tb.innerHTML=data.map(p=>{
+    const cc=catColors[p.cat]||{bg:'rgba(255,255,255,0.07)',c:'#9ca3af'};
+    const stockColor=p.stock<p.safe?'var(--red)':p.stock<p.safe*1.5?'var(--yellow)':'var(--green)';
+    return `<tr>
+      <td><div class="prod-name">${p.name}</div><div class="prod-code">${p.code}</div></td>
+      <td><span class="cat-badge" style="background:${cc.bg};color:${cc.c}">${p.cat}</span></td>
+      <td><span style="font-size:12px;background:var(--panel);padding:2px 8px;border-radius:6px;border:1px solid var(--border)">${p.wh}</span></td>
+      <td><span style="font-size:15px;font-weight:700;color:${stockColor}">${p.stock}</span> <span style="color:var(--muted);font-size:12px">${p.unit}</span></td>
+      <td style="color:var(--muted)">${p.safe} ${p.unit}</td>
+      <td>${levelBar(p.stock,p.safe)}</td>
+      <td>${statusChip(p.status)}</td>
+      <td style="color:var(--muted);font-size:12px">${p.updated}</td>
+    </tr>`;
+  }).join('');
+}
+
+function doFilter(){
+  const q=document.getElementById('q').value.toLowerCase();
+  const cat=document.getElementById('fCat').value;
+  const wh=document.getElementById('fWh').value;
+  const st=document.getElementById('fSt').value;
+  render(products.filter(p=>{
+    const mq=!q||p.name.toLowerCase().includes(q)||p.code.toLowerCase().includes(q);
+    return mq&&(!cat||p.cat===cat)&&(!wh||p.wh===wh)&&(!st||p.status===st);
+  }));
+}
+function resetFilter(){
+  ['q','fCat','fWh','fSt'].forEach(id=>document.getElementById(id).value='');
+  render(products);
+}
+document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')doFilter();});
+render(products);
+</script>
+
+<script>
+const _u = JJ.getUser(); if (!_u) location.href = 'login.html';
+document.querySelectorAll('.user-name').forEach(el => el.textContent = _u ? _u.name : '');
+document.addEventListener('DOMContentLoaded', () => {
+  function renderStock(list) {
+    const tbody = document.querySelector('table tbody');
+    if (!tbody) return;
+    tbody.innerHTML = list.map(p => {
+      const pct = Math.min(100, Math.round(p.stock/p.safe*100));
+      const col = pct<30?'#e03a2f':pct<70?'#f5a623':'#3dba7e';
+      const lvl = pct<30?'緊急':pct<70?'注意':'正常';
+      return `<tr>
+        <td><div style="font-weight:600">${p.name}</div><div style="font-size:11px;color:#6b7280">${p.code}</div></td>
+        <td><span style="padding:2px 9px;border-radius:7px;font-size:11px;background:rgba(74,144,217,0.1);color:#4a90d9">${p.cat}</span></td>
+        <td><span style="font-size:12px;background:rgba(0,0,0,0.04);padding:2px 8px;border-radius:5px">${p.wh}</span></td>
+        <td><div style="display:flex;align-items:center;gap:8px"><div style="width:80px;height:6px;background:#374151;border-radius:3px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${col};border-radius:3px"></div></div><span style="font-weight:700;color:${col}">${p.stock}</span></div></td>
+        <td style="color:#6b7280">${p.safe}</td>
+        <td><span style="padding:2px 9px;border-radius:7px;font-size:11px;font-weight:600;background:rgba(${pct<30?'224,58,47':pct<70?'245,166,35':'61,186,126'},0.12);color:${col}">${lvl}</span></td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="6" style="text-align:center;padding:30px;color:#6b7280">查無資料</td></tr>';
+  }
+  const products = JJ.getProducts();
+  renderStock(products);
+  const si = document.querySelector('input[type="text"]');
+  if (si) si.addEventListener('input', () => {
+    const kw = si.value.toLowerCase();
+    renderStock(products.filter(p => p.name.toLowerCase().includes(kw)||p.code.toLowerCase().includes(kw)));
+  });
+});
+</script>
+
+<script>
+// ── Session 守衛 + 角色存取控制 ──
+(function(){
+  const ok = JJ.guardPage('jj-stock');
+  if (!ok) return;
+  const _u = JJ.getUser();
+  // 更新側欄使用者名稱
+  document.querySelectorAll('.user-name').forEach(el => el.textContent = _u ? _u.name : '');
+  document.querySelectorAll('.user-role').forEach(el => el.textContent = _u ? _u.role : '');
+  document.querySelectorAll('.user-avatar').forEach(el => { if(_u) el.textContent=_u.name[0]; });
+  // Session 活動更新（滑鼠移動、點擊）
+  ['mousemove','click','keydown','scroll'].forEach(ev =>
+    document.addEventListener(ev, () => JJ.touchSession(), {passive:true, once:false})
+  );
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<script src="shared_store.js"></script>
+
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JJ 簡易庫存管理系統 — 儀表板</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f4f8;
+  --sidebar:#ffffff;
+  --panel:#ffffff;
+  --card:#ffffff;
+  --border:rgba(0,0,0,0.09);
+  --border2:rgba(255,255,255,0.12);
+  --red:#e03a2f;
+  --red-dim:rgba(220,38,38,0.08);
+  --blue:#1d6fb8;
+  --blue-dim:rgba(29,111,184,0.08);
+  --green:#1a9e5c;
+  --green-dim:rgba(26,158,92,0.08);
+  --yellow:#f5a623;
+  --yellow-dim:rgba(217,119,6,0.08);
+  --purple:#9b6dff;
+  --text:#1a2535;
+  --muted:#64748b;
+  --muted2:#e2e8f0;
+}
+body{
+  display:flex;min-height:100vh;
+  background:var(--bg);
+  font-family:'Noto Sans TC',sans-serif;
+  color:var(--text);
+  font-size:14px;
+}
+
+/* ── Sidebar ── */
+.sidebar{
+  width:220px;flex-shrink:0;
+  background:var(--sidebar);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  position:fixed;top:0;left:0;height:100vh;
+  z-index:100;
+  transition:transform .3s;
+}
+.sidebar-logo{
+  padding:24px 20px 20px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:11px;
+}
+.jj-icon{
+  width:38px;height:38px;border-radius:10px;
+  background:linear-gradient(135deg,#e03a2f,#a01e15);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:900;color:#fff;
+  box-shadow:0 4px 12px rgba(224,58,47,0.35);
+  flex-shrink:0;
+}
+.logo-text{font-size:13px;font-weight:700;line-height:1.3;}
+.logo-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+
+.nav{flex:1;padding:16px 0;overflow-y:auto;}
+.nav-section{
+  font-size:10px;color:var(--muted);letter-spacing:.1em;
+  padding:12px 20px 6px;text-transform:uppercase;
+}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 20px;cursor:pointer;
+  color:var(--muted);font-size:13px;font-weight:500;
+  border-left:3px solid transparent;
+  transition:all .2s;position:relative;
+}
+.nav-item:hover{color:var(--text);background:rgba(0,0,0,0.03);}
+.nav-item.active{
+  color:var(--text);
+  background:rgba(224,58,47,0.08);
+  border-left-color:var(--red);
+}
+.nav-icon{font-size:16px;width:20px;text-align:center;}
+.nav-badge{
+  margin-left:auto;padding:1px 7px;border-radius:10px;
+  background:var(--red);color:#fff;font-size:10px;font-weight:700;
+}
+
+.sidebar-user{
+  padding:16px 20px;border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.user-avatar{
+  width:34px;height:34px;border-radius:50%;
+  background:linear-gradient(135deg,var(--blue),var(--purple));
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;flex-shrink:0;
+}
+.user-name{font-size:13px;font-weight:600;}
+.user-role{font-size:10px;color:var(--muted);margin-top:1px;}
+.user-logout{margin-left:auto;color:var(--muted);font-size:16px;cursor:pointer;transition:color .2s;}
+.user-logout:hover{color:var(--red);}
+
+/* ── Main ── */
+.main{
+  margin-left:220px;flex:1;
+  display:flex;flex-direction:column;
+  min-height:100vh;
+}
+
+/* Topbar */
+.topbar{
+  height:60px;
+  background:var(--panel);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;
+  padding:0 28px;gap:16px;
+  position:sticky;top:0;z-index:50;
+}
+.topbar-title{font-size:16px;font-weight:700;}
+.topbar-breadcrumb{font-size:12px;color:var(--muted);margin-left:4px;}
+.topbar-date{margin-left:auto;font-size:12px;color:var(--muted);}
+.topbar-notif{
+  width:34px;height:34px;border-radius:8px;
+  background:var(--card);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;position:relative;font-size:16px;
+  transition:border-color .2s;
+}
+.topbar-notif:hover{border-color:var(--border2);}
+.notif-dot{
+  position:absolute;top:6px;right:6px;
+  width:7px;height:7px;border-radius:50%;
+  background:var(--red);border:2px solid var(--panel);
+}
+
+/* Content */
+.content{padding:28px;flex:1;}
+
+/* KPI Cards */
+.kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:16px;margin-bottom:24px;
+}
+.kpi{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:14px;padding:20px;
+  position:relative;overflow:hidden;
+  animation:fadeUp .4s ease both;
+  transition:transform .2s,border-color .2s;
+}
+.kpi:hover{transform:translateY(-2px);border-color:var(--border2);}
+.kpi:nth-child(1){animation-delay:.05s;}
+.kpi:nth-child(2){animation-delay:.1s;}
+.kpi:nth-child(3){animation-delay:.15s;}
+.kpi:nth-child(4){animation-delay:.2s;}
+.kpi-bg{
+  position:absolute;top:-20px;right:-20px;
+  width:80px;height:80px;border-radius:50%;
+  opacity:.08;
+}
+.kpi-label{font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;}
+.kpi-value{font-size:32px;font-weight:700;line-height:1;}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:8px;display:flex;align-items:center;gap:4px;}
+.kpi-trend{font-size:11px;padding:2px 6px;border-radius:5px;font-weight:600;}
+.kpi-icon{font-size:22px;margin-bottom:8px;}
+
+/* Mid grid */
+.mid-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
+
+/* Section card */
+.sec{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:14px;overflow:hidden;
+  animation:fadeUp .4s ease both;
+}
+.sec:nth-child(1){animation-delay:.25s;}
+.sec:nth-child(2){animation-delay:.3s;}
+.sec-header{
+  padding:16px 20px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.sec-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.sec-action{
+  font-size:12px;color:var(--blue);cursor:pointer;
+  padding:4px 10px;border-radius:6px;border:1px solid rgba(74,144,217,0.25);
+  transition:background .2s;
+}
+.sec-action:hover{background:rgba(74,144,217,0.08);}
+
+/* Alert list */
+.alert-list{padding:8px 0;}
+.alert-item{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 20px;
+  border-bottom:1px solid var(--border);
+  transition:background .15s;cursor:pointer;
+}
+.alert-item:last-child{border-bottom:none;}
+.alert-item:hover{background:rgba(0,0,0,0.02);}
+.alert-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.alert-name{font-size:13px;font-weight:500;flex:1;}
+.alert-stock{font-size:12px;}
+.alert-safe{font-size:11px;color:var(--muted);}
+.alert-btn{
+  font-size:11px;padding:3px 10px;border-radius:6px;
+  background:var(--red-dim);color:var(--red);
+  border:1px solid rgba(224,58,47,0.2);cursor:pointer;
+  white-space:nowrap;
+}
+
+/* Bar chart */
+.chart-area{padding:20px;}
+.chart-bars{display:flex;align-items:flex-end;gap:8px;height:120px;margin-bottom:8px;}
+.bar-group{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.bar-wrap{width:100%;display:flex;gap:3px;align-items:flex-end;height:110px;}
+.bar{
+  flex:1;border-radius:4px 4px 0 0;
+  transition:opacity .2s;cursor:pointer;min-height:4px;
+}
+.bar:hover{opacity:.8;}
+.bar-in{background:linear-gradient(180deg,var(--blue),rgba(74,144,217,0.5));}
+.bar-out{background:linear-gradient(180deg,var(--green),rgba(61,186,126,0.5));}
+.bar-label{font-size:10px;color:var(--muted);white-space:nowrap;}
+.chart-legend{display:flex;gap:16px;margin-top:4px;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);}
+.legend-dot{width:8px;height:8px;border-radius:2px;}
+
+/* Bottom grid */
+.bottom-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;}
+.bottom-grid .sec:nth-child(1){animation-delay:.35s;}
+.bottom-grid .sec:nth-child(2){animation-delay:.4s;}
+
+/* Table */
+.mini-table{width:100%;border-collapse:collapse;}
+.mini-table th{
+  font-size:11px;color:var(--muted);font-weight:500;
+  padding:8px 20px;border-bottom:1px solid var(--border);
+  text-align:left;letter-spacing:.04em;text-transform:uppercase;
+}
+.mini-table td{
+  padding:10px 20px;border-bottom:1px solid var(--border);
+  font-size:13px;
+}
+.mini-table tr:last-child td{border-bottom:none;}
+.mini-table tr:hover td{background:rgba(0,0,0,0.02);}
+.type-badge{
+  display:inline-block;padding:2px 8px;border-radius:5px;
+  font-size:11px;font-weight:600;
+}
+.type-in{background:var(--blue-dim);color:var(--blue);}
+.type-out{background:var(--green-dim);color:var(--green);}
+.type-adj{background:var(--yellow-dim);color:var(--yellow);}
+
+/* Quick actions */
+.quick-list{padding:8px 0;}
+.quick-item{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 20px;cursor:pointer;
+  border-bottom:1px solid var(--border);
+  transition:background .15s;
+}
+.quick-item:last-child{border-bottom:none;}
+.quick-item:hover{background:rgba(0,0,0,0.025);}
+.quick-icon{
+  width:36px;height:36px;border-radius:9px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;flex-shrink:0;
+}
+.quick-name{font-size:13px;font-weight:600;}
+.quick-sub{font-size:11px;color:var(--muted);margin-top:1px;}
+.quick-arrow{margin-left:auto;color:var(--muted);font-size:14px;}
+
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(16px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+/* Responsive */
+@media(max-width:900px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr);}
+  .mid-grid,.bottom-grid{grid-template-columns:1fr;}
+}
+@media(max-width:640px){
+  .sidebar{transform:translateX(-100%);}
+  .main{margin-left:0;}
+  .kpi-grid{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="jj-icon">JJ</div>
+    <div>
+      <div class="logo-text">JJ 庫存系統</div>
+      <div class="logo-sub">倉儲／物流版</div>
+    </div>
+  </div>
+
+    <nav class="nav">
+    <div class="nav-section">主選單</div>
+    <div class="nav-item" onclick="location.href='jj-dashboard.html'" ><span class="nav-icon">🏠</span> 儀表板</div>
+    <div class="nav-item" onclick="location.href='jj-products.html'"><span class="nav-icon">📦</span> 商品管理</div>
+    <div class="nav-item" onclick="location.href='jj-stock.html'"><span class="nav-icon">🔍</span> 庫存查詢</div>
+    <div class="nav-section">入出庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-inbound.html'"><span class="nav-icon">📥</span> 入庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-outbound.html'"><span class="nav-icon">📤</span> 出庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-transfer.html'"><span class="nav-icon">🔄</span> 調撥作業</div>
+    <div class="nav-item" onclick="location.href='jj-logs.html'"><span class="nav-icon">📋</span> 異動紀錄</div>
+    <div class="nav-section">分析</div>
+    <div class="nav-item" onclick="location.href='jj-warroom.html'"><span class="nav-icon">🎯</span> 戰情室</div>
+    <div class="nav-section">警示與報表</div>
+    <div class="nav-item" onclick="location.href='jj-alerts.html'"><span class="nav-icon">🔔</span> 低庫存警示<span class="nav-badge" id="navBadge">0</span></div>
+    <div class="nav-item" onclick="location.href='jj-inventory.html'"><span class="nav-icon">🗂️</span> 盤點作業</div>
+    <div class="nav-item" onclick="location.href='jj-reports.html'"><span class="nav-icon">📊</span> 報表匯出</div>
+    <div class="nav-section">工具</div>
+    <div class="nav-item" onclick="location.href='jj-qrcode.html'"><span class="nav-icon">🔲</span> QR Code</div>
+    <div class="nav-section">系統管理</div>
+    <div class="nav-item" onclick="location.href='jj-users.html'"><span class="nav-icon">👥</span> 權限管理</div>
+    <div class="nav-item" onclick="location.href='jj-oplog.html'"><span class="nav-icon">📝</span> 操作紀錄</div>
+    <div class="nav-item" onclick="location.href='jj-warehouse.html'"><span class="nav-icon">🏭</span> 倉庫設定</div>
+    <div class="nav-section">帳號</div>
+    <div class="nav-item" onclick="location.href='jj-profile.html'"><span class="nav-icon">👤</span> 帳號設定</div>
+  </nav>
+
+  <div class="sidebar-user">
+    <div class="user-avatar">黃</div>
+    <div>
+      <div class="user-name">黃小翰</div>
+      <div class="user-role">系統管理員</div>
+    </div>
+    <div class="user-logout" onclick="if(confirm('確定要登出嗎？')){JJ.addLog({type:'登入/登出',prod:'—',wh:'—',chg:'—',before:'—',after:'—',user:(JJ.getUser()||{}).name||'',doc:'—',note:'使用者登出系統'});JJ.clearUser();location.href='login.html';}" style="cursor:pointer">⏻</div>
+  </div>
+</aside>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div>
+      <span class="topbar-title">儀表板</span>
+      <span class="topbar-breadcrumb">/ 首頁總覽</span>
+    </div>
+    <div class="topbar-date" id="topbarDate"></div>
+    <div class="topbar-notif">
+      🔔
+      <div class="notif-dot"></div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- KPI -->
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-bg" style="background:var(--blue)"></div>
+        <div class="kpi-icon">📦</div>
+        <div class="kpi-label">商品總項數</div>
+        <div class="kpi-value" style="color:var(--blue)">248</div>
+        <div class="kpi-sub">
+          <span class="kpi-trend" style="background:var(--green-dim);color:var(--green)">↑ 3</span>
+          本月新增
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-bg" style="background:var(--green)"></div>
+        <div class="kpi-icon">📥</div>
+        <div class="kpi-label">今日入庫</div>
+        <div class="kpi-value" style="color:var(--green)">1,240</div>
+        <div class="kpi-sub">
+          <span class="kpi-trend" style="background:var(--green-dim);color:var(--green)">↑ 12%</span>
+          較昨日
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-bg" style="background:var(--yellow)"></div>
+        <div class="kpi-icon">📤</div>
+        <div class="kpi-label">今日出庫</div>
+        <div class="kpi-value" style="color:var(--yellow)">876</div>
+        <div class="kpi-sub">
+          <span class="kpi-trend" style="background:var(--red-dim);color:var(--red)">↓ 5%</span>
+          較昨日
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-bg" style="background:var(--red)"></div>
+        <div class="kpi-icon">🔔</div>
+        <div class="kpi-label">低庫存警示</div>
+        <div class="kpi-value" style="color:var(--red)">5</div>
+        <div class="kpi-sub">
+          <span class="kpi-trend" style="background:var(--red-dim);color:var(--red)">需補貨</span>
+          請盡快處理
+        </div>
+      </div>
+    </div>
+
+    <!-- Mid: Alert + Chart -->
+    <div class="mid-grid">
+
+      <!-- Low stock alerts -->
+      <div class="sec">
+        <div class="sec-header">
+          <div class="sec-title">🔔 低庫存警示</div>
+          <div class="sec-action">查看全部</div>
+        </div>
+        <div class="alert-list">
+          <div class="alert-item">
+            <div class="alert-dot" style="background:var(--red)"></div>
+            <div style="flex:1">
+              <div class="alert-name">防水膠帶 50mm</div>
+              <div class="alert-safe">安全庫存：100 件</div>
+            </div>
+            <div style="text-align:right">
+              <div class="alert-stock" style="color:var(--red);font-weight:700;">剩 12 件</div>
+            </div>
+            <button class="alert-btn">補貨</button>
+          </div>
+          <div class="alert-item">
+            <div class="alert-dot" style="background:var(--red)"></div>
+            <div style="flex:1">
+              <div class="alert-name">棧板 120x100cm</div>
+              <div class="alert-safe">安全庫存：50 片</div>
+            </div>
+            <div style="text-align:right">
+              <div class="alert-stock" style="color:var(--red);font-weight:700;">剩 8 片</div>
+            </div>
+            <button class="alert-btn">補貨</button>
+          </div>
+          <div class="alert-item">
+            <div class="alert-dot" style="background:var(--yellow)"></div>
+            <div style="flex:1">
+              <div class="alert-name">紙箱 A4 尺寸</div>
+              <div class="alert-safe">安全庫存：200 個</div>
+            </div>
+            <div style="text-align:right">
+              <div class="alert-stock" style="color:var(--yellow);font-weight:700;">剩 45 個</div>
+            </div>
+            <button class="alert-btn" style="background:rgba(245,166,35,0.12);color:var(--yellow);border-color:rgba(245,166,35,0.2);">注意</button>
+          </div>
+          <div class="alert-item">
+            <div class="alert-dot" style="background:var(--yellow)"></div>
+            <div style="flex:1">
+              <div class="alert-name">包裝泡棉 30mm</div>
+              <div class="alert-safe">安全庫存：150 捲</div>
+            </div>
+            <div style="text-align:right">
+              <div class="alert-stock" style="color:var(--yellow);font-weight:700;">剩 38 捲</div>
+            </div>
+            <button class="alert-btn" style="background:rgba(245,166,35,0.12);color:var(--yellow);border-color:rgba(245,166,35,0.2);">注意</button>
+          </div>
+          <div class="alert-item">
+            <div class="alert-dot" style="background:var(--red)"></div>
+            <div style="flex:1">
+              <div class="alert-name">收縮膜 500m</div>
+              <div class="alert-safe">安全庫存：20 捲</div>
+            </div>
+            <div style="text-align:right">
+              <div class="alert-stock" style="color:var(--red);font-weight:700;">剩 3 捲</div>
+            </div>
+            <button class="alert-btn">補貨</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bar chart -->
+      <div class="sec">
+        <div class="sec-header">
+          <div class="sec-title">📊 本週入出庫趨勢</div>
+          <div class="sec-action">詳細報表</div>
+        </div>
+        <div class="chart-area">
+          <div class="chart-bars" id="chartBars"></div>
+          <div class="chart-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>入庫</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>出庫</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom: Recent + Quick Actions -->
+    <div class="bottom-grid">
+
+      <!-- Recent transactions -->
+      <div class="sec">
+        <div class="sec-header">
+          <div class="sec-title">📋 最近異動紀錄</div>
+          <div class="sec-action">查看全部</div>
+        </div>
+        <table class="mini-table">
+          <thead>
+            <tr>
+              <th>時間</th>
+              <th>類型</th>
+              <th>商品名稱</th>
+              <th>數量</th>
+              <th>經手人</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="color:var(--muted)">14:32</td>
+              <td><span class="type-badge type-in">入庫</span></td>
+              <td>防水膠帶 50mm</td>
+              <td style="color:var(--blue)">+200</td>
+              <td>陳小華</td>
+            </tr>
+            <tr>
+              <td style="color:var(--muted)">13:15</td>
+              <td><span class="type-badge type-out">出庫</span></td>
+              <td>紙箱 A4 尺寸</td>
+              <td style="color:var(--green)">-50</td>
+              <td>李大明</td>
+            </tr>
+            <tr>
+              <td style="color:var(--muted)">11:48</td>
+              <td><span class="type-badge type-in">入庫</span></td>
+              <td>棧板 120x100cm</td>
+              <td style="color:var(--blue)">+30</td>
+              <td>黃小翰</td>
+            </tr>
+            <tr>
+              <td style="color:var(--muted)">10:20</td>
+              <td><span class="type-badge type-out">出庫</span></td>
+              <td>收縮膜 500m</td>
+              <td style="color:var(--green)">-10</td>
+              <td>陳小華</td>
+            </tr>
+            <tr>
+              <td style="color:var(--muted)">09:05</td>
+              <td><span class="type-badge type-adj">調撥</span></td>
+              <td>包裝泡棉 30mm</td>
+              <td style="color:var(--yellow)">A→B</td>
+              <td>黃小翰</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="sec">
+        <div class="sec-header">
+          <div class="sec-title">⚡ 快速操作</div>
+        </div>
+        <div class="quick-list">
+          <div class="quick-item">
+            <div class="quick-icon" style="background:var(--blue-dim)">📥</div>
+            <div>
+              <div class="quick-name">新增入庫單</div>
+              <div class="quick-sub">登錄商品入庫</div>
+            </div>
+            <div class="quick-arrow">›</div>
+          </div>
+          <div class="quick-item">
+            <div class="quick-icon" style="background:var(--green-dim)">📤</div>
+            <div>
+              <div class="quick-name">新增出庫單</div>
+              <div class="quick-sub">登錄商品出庫</div>
+            </div>
+            <div class="quick-arrow">›</div>
+          </div>
+          <div class="quick-item">
+            <div class="quick-icon" style="background:var(--yellow-dim)">📦</div>
+            <div>
+              <div class="quick-name">新增商品</div>
+              <div class="quick-sub">建立商品主檔</div>
+            </div>
+            <div class="quick-arrow">›</div>
+          </div>
+          <div class="quick-item">
+            <div class="quick-icon" style="background:var(--purple-dim,rgba(155,109,255,0.12))">📊</div>
+            <div>
+              <div class="quick-name">匯出報表</div>
+              <div class="quick-sub">Excel / PDF 下載</div>
+            </div>
+            <div class="quick-arrow">›</div>
+          </div>
+          <div class="quick-item">
+            <div class="quick-icon" style="background:var(--red-dim)">🗂️</div>
+            <div>
+              <div class="quick-name">開始盤點</div>
+              <div class="quick-sub">建立盤點作業</div>
+            </div>
+            <div class="quick-arrow">›</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+// Date
+const d = new Date();
+const days = ['日','一','二','三','四','五','六'];
+document.getElementById('topbarDate').textContent =
+  `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} (週${days[d.getDay()]})`;
+
+// Bar chart
+const data = [
+  {day:'週一', in:320, out:280},
+  {day:'週二', in:410, out:350},
+  {day:'週三', in:280, out:310},
+  {day:'週四', in:500, out:420},
+  {day:'週五', in:380, out:290},
+  {day:'週六', in:200, out:150},
+  {day:'今日', in:1240, out:876},
+];
+const maxVal = Math.max(...data.map(d=>Math.max(d.in,d.out)));
+const container = document.getElementById('chartBars');
+data.forEach(item => {
+  const inH  = Math.round((item.in  / maxVal) * 100);
+  const outH = Math.round((item.out / maxVal) * 100);
+  container.innerHTML += `
+    <div class="bar-group">
+      <div class="bar-wrap">
+        <div class="bar bar-in"  style="height:${inH}%"  title="入庫 ${item.in}"></div>
+        <div class="bar bar-out" style="height:${outH}%" title="出庫 ${item.out}"></div>
+      </div>
+      <div class="bar-label">${item.day}</div>
+    </div>`;
+});
+</script>
+
+<script>
+const _u = JJ.getUser(); if (!_u) location.href = 'login.html';
+document.querySelectorAll('.user-name').forEach(el => el.textContent = _u ? _u.name : '');
+
+document.addEventListener('DOMContentLoaded', () => {
+  const products = JJ.getProducts();
+  const logs     = JJ.getLogs();
+
+  const total = products.length;
+  const low   = products.filter(p => p.stock < p.safe).length;
+
+  const today = new Date().toLocaleDateString('zh-TW');
+  const todayLogs = logs.filter(l => l.time && l.time.startsWith(today.replace(/\//g,'-').slice(0,10)) || l.time?.includes(today.slice(-5)));
+  const todayIn  = todayLogs.filter(l => l.type === '入庫').reduce((s,l) => s + Math.abs(parseInt(l.chg)||0), 0);
+  const todayOut = todayLogs.filter(l => l.type === '出庫').reduce((s,l) => s + Math.abs(parseInt(l.chg)||0), 0);
+
+  // 更新 KPI 卡片（找數字最大的元素）
+  const kpiVals = document.querySelectorAll('.kpi-value, .stat-value, [class*="kpi"] [class*="value"]');
+  const nums = [...kpiVals].filter(el => /^[\d,]+$/.test(el.textContent.trim()));
+  if (nums[0]) nums[0].textContent = total;
+  if (nums[2]) nums[2].textContent = low;
+
+  // 更新低庫存警示清單
+  const lowProds = products.filter(p => p.stock < p.safe).sort((a,b) => (a.stock/a.safe)-(b.stock/b.safe));
+  const alertList = document.querySelector('.alert-list, [class*="alert"]');
+
+  // 更新側欄 badge
+  document.querySelectorAll('.nav-badge').forEach(b => b.textContent = low);
+
+  // 近期異動紀錄
+  const logRows = logs.slice(0,8);
+  const logTbody = document.querySelector('table tbody');
+  if (logTbody && logRows.length) {
+    const typeColor = { '入庫': '#4a90d9', '出庫': '#3dba7e', '商品管理': '#f5a623', '登入/登出': '#9b6dff' };
+    logTbody.innerHTML = logRows.map(l => `
+      <tr>
+        <td style="color:#6b7280;font-size:12px">${l.time||'—'}</td>
+        <td><span style="padding:2px 9px;border-radius:7px;font-size:11px;font-weight:600;background:rgba(0,0,0,0.05);color:${typeColor[l.type]||'#9ca3af'}">${l.type}</span></td>
+        <td style="font-weight:500">${l.prod}</td>
+        <td style="font-weight:700;color:${l.chg&&l.chg.startsWith('+')?'#4a90d9':'#3dba7e'}">${l.chg}</td>
+        <td style="color:#6b7280">${l.user}</td>
+      </tr>`).join('');
+  }
+});
+</script>
+
+
+<script>
+// ── Session 守衛 + 角色存取控制 ──
+(function(){
+  const ok = JJ.guardPage('jj-dashboard');
+  if (!ok) return;
+  const _u = JJ.getUser();
+  // 更新側欄使用者名稱
+  document.querySelectorAll('.user-name').forEach(el => el.textContent = _u ? _u.name : '');
+  document.querySelectorAll('.user-role').forEach(el => el.textContent = _u ? _u.role : '');
+  document.querySelectorAll('.user-avatar').forEach(el => { if(_u) el.textContent=_u.name[0]; });
+  // Session 活動更新（滑鼠移動、點擊）
+  ['mousemove','click','keydown','scroll'].forEach(ev =>
+    document.addEventListener(ev, () => JJ.touchSession(), {passive:true, once:false})
+  );
+})();
+</script>
+
+</body>
+</html>

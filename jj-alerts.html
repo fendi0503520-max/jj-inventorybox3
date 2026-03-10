@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<script src="shared_store.js"></script>
+
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JJ 簡易庫存管理系統 — 低庫存警示</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f0f4f8;--sidebar:#ffffff;--panel:#ffffff;--card:#ffffff;--border:rgba(0,0,0,0.09);--border2:rgba(0,0,0,0.15);--red:#e03a2f;--red-dim:rgba(220,38,38,0.08);--blue:#1d6fb8;--blue-dim:rgba(29,111,184,0.08);--green:#1a9e5c;--green-dim:rgba(26,158,92,0.08);--yellow:#f5a623;--yellow-dim:rgba(217,119,6,0.08);--purple:#9b6dff;--text:#1a2535;--muted:#64748b;--muted2:#e2e8f0;}
+body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans TC',sans-serif;color:var(--text);font-size:14px;}
+.sidebar{width:220px;flex-shrink:0;background:var(--sidebar);border-right:1px solid var(--border);box-shadow:2px 0 12px rgba(0,0,0,0.06);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;}
+.sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px;}
+.jj-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#e03a2f,#a01e15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;box-shadow:0 4px 12px rgba(224,58,47,0.35);flex-shrink:0;}
+.logo-text{font-size:13px;font-weight:700;color:#1a2535;}.logo-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+.nav{flex:1;padding:16px 0;overflow-y:auto;}
+.nav-section{font-size:10px;color:var(--muted);letter-spacing:.1em;padding:12px 20px 6px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;color:#64748b;font-size:13px;font-weight:500;border-left:3px solid transparent;transition:all .2s;}
+.nav-item:hover{color:var(--text);background:rgba(0,0,0,0.03);}
+.nav-item.active{color:var(--red);background:rgba(220,38,38,0.06);border-left-color:var(--red);}
+.nav-icon{font-size:16px;width:20px;text-align:center;}
+.nav-badge{margin-left:auto;padding:1px 7px;border-radius:10px;background:var(--red);color:#fff;font-size:10px;font-weight:700;}
+.sidebar-user{padding:16px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+.user-name{font-size:13px;font-weight:600;}.user-role{font-size:10px;color:var(--muted);margin-top:1px;}
+.user-logout{margin-left:auto;color:var(--muted);font-size:16px;cursor:pointer;}
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;}
+.topbar{height:60px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:16px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:16px;font-weight:700;}.topbar-breadcrumb{font-size:12px;color:var(--muted);margin-left:4px;}
+.topbar-date{margin-left:auto;font-size:12px;color:var(--muted);}
+.topbar-notif{width:34px;height:34px;border-radius:8px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;font-size:16px;}
+.notif-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--red);border:2px solid var(--panel);}
+.content{padding:28px;flex:1;}
+
+/* Alert banner */
+.alert-banner{background:linear-gradient(135deg,rgba(224,58,47,0.15),rgba(224,58,47,0.05));border:1px solid rgba(224,58,47,0.3);border-radius:14px;padding:18px 24px;margin-bottom:24px;display:flex;align-items:center;gap:16px;animation:fadeUp .3s ease both;}
+.banner-icon{font-size:32px;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.12);}}
+.banner-text h2{font-size:17px;font-weight:700;color:var(--red);margin-bottom:4px;}
+.banner-text p{font-size:13px;color:var(--muted);}
+.banner-action{margin-left:auto;display:flex;gap:10px;}
+.btn-notify{padding:8px 16px;border-radius:9px;background:var(--red);color:#fff;border:none;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .2s;}
+.btn-notify:hover{opacity:.85;}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;animation:fadeUp .3s ease both;position:relative;overflow:hidden;}
+.kpi:nth-child(1){animation-delay:.05s;border-top:2px solid var(--red);}
+.kpi:nth-child(2){animation-delay:.1s;border-top:2px solid var(--yellow);}
+.kpi:nth-child(3){animation-delay:.15s;border-top:2px solid var(--green);}
+.kpi:nth-child(4){animation-delay:.2s;border-top:2px solid var(--blue);}
+.kpi-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+.kpi-value{font-size:30px;font-weight:700;}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:6px;}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-bottom:20px;background:var(--card);padding:4px;border-radius:10px;border:1px solid var(--border);width:fit-content;}
+.tab{padding:7px 18px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);transition:all .2s;}
+.tab.active{background:var(--red);color:#fff;}
+.tab:not(.active):hover{color:var(--text);}
+
+/* Alert cards grid */
+.alerts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:24px;}
+.alert-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;animation:fadeUp .4s ease both;transition:transform .2s,border-color .2s;position:relative;}
+.alert-card:hover{transform:translateY(-2px);border-color:var(--border2);}
+.alert-card.critical{border-left:3px solid var(--red);}
+.alert-card.warning{border-left:3px solid var(--yellow);}
+.ac-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;}
+.ac-name{font-size:14px;font-weight:700;margin-bottom:3px;}
+.ac-code{font-size:11px;color:var(--muted);}
+.ac-level{padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;}
+.level-critical{background:var(--red-dim);color:var(--red);}
+.level-warning{background:var(--yellow-dim);color:var(--yellow);}
+.ac-bar-wrap{margin-bottom:12px;}
+.ac-bar-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:5px;}
+.ac-bar{height:7px;background:var(--muted2);border-radius:4px;overflow:hidden;}
+.ac-fill{height:100%;border-radius:4px;}
+.ac-nums{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.ac-stock{font-size:22px;font-weight:700;}
+.ac-safe{font-size:12px;color:var(--muted);}
+.ac-shortage{font-size:13px;font-weight:600;}
+.ac-footer{display:flex;gap:8px;}
+.ac-btn{flex:1;padding:7px;border-radius:8px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;border:1px solid transparent;transition:all .15s;text-align:center;}
+.ac-btn-primary{background:var(--red);color:#fff;border-color:var(--red);}
+.ac-btn-primary:hover{opacity:.85;}
+.ac-btn-ghost{background:var(--card);color:var(--muted);border-color:var(--border);}
+.ac-btn-ghost:hover{color:var(--text);border-color:var(--border2);}
+.ac-btn-warn{background:var(--yellow-dim);color:var(--yellow);border-color:rgba(245,166,35,0.2);}
+.ac-btn-warn:hover{background:rgba(245,166,35,0.2);}
+
+/* History table */
+.table-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;animation:fadeUp .4s .25s ease both;}
+.table-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+table{width:100%;border-collapse:collapse;}
+thead tr{background:rgba(0,0,0,0.025);}
+th{padding:10px 16px;font-size:11px;font-weight:600;color:var(--muted);text-align:left;letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--border);}
+td{padding:11px 16px;border-bottom:1px solid var(--border);font-size:13px;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:rgba(0,0,0,0.02);}
+
+/* Toast */
+.toast{position:fixed;bottom:30px;right:30px;background:#1e2a3a;border:1px solid rgba(74,144,217,0.3);border-radius:12px;padding:14px 20px;font-size:13px;font-weight:600;color:var(--blue);box-shadow:0 8px 24px rgba(0,0,0,0.4);transform:translateY(80px);opacity:0;transition:all .3s;z-index:999;}
+.toast.show{transform:translateY(0);opacity:1;}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+@media(max-width:900px){.kpi-row{grid-template-columns:repeat(2,1fr);}.alerts-grid{grid-template-columns:1fr;}}
+@media(max-width:640px){.sidebar{display:none;}.main{margin-left:0;}}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo"><div class="jj-icon">JJ</div><div><div class="logo-text">JJ 庫存系統</div><div class="logo-sub">倉儲／物流版</div></div></div>
+    <nav class="nav">
+    <div class="nav-section">主選單</div>
+    <div class="nav-item" onclick="location.href='jj-dashboard.html'"><span class="nav-icon">🏠</span> 儀表板</div>
+    <div class="nav-item" onclick="location.href='jj-products.html'"><span class="nav-icon">📦</span> 商品管理</div>
+    <div class="nav-item" onclick="location.href='jj-stock.html'"><span class="nav-icon">🔍</span> 庫存查詢</div>
+    <div class="nav-section">入出庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-inbound.html'"><span class="nav-icon">📥</span> 入庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-outbound.html'"><span class="nav-icon">📤</span> 出庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-transfer.html'"><span class="nav-icon">🔄</span> 調撥作業</div>
+    <div class="nav-item" onclick="location.href='jj-logs.html'"><span class="nav-icon">📋</span> 異動紀錄</div>
+    <div class="nav-section">分析</div>
+    <div class="nav-item" onclick="location.href='jj-warroom.html'"><span class="nav-icon">🎯</span> 戰情室</div>
+    <div class="nav-section">警示與報表</div>
+    <div class="nav-item" onclick="location.href='jj-alerts.html'" ><span class="nav-icon">🔔</span> 低庫存警示<span class="nav-badge" id="navBadge">0</span></div>
+    <div class="nav-item" onclick="location.href='jj-inventory.html'"><span class="nav-icon">🗂️</span> 盤點作業</div>
+    <div class="nav-item" onclick="location.href='jj-reports.html'"><span class="nav-icon">📊</span> 報表匯出</div>
+    <div class="nav-section">工具</div>
+    <div class="nav-item" onclick="location.href='jj-qrcode.html'"><span class="nav-icon">🔲</span> QR Code</div>
+    <div class="nav-section">系統管理</div>
+    <div class="nav-item" onclick="location.href='jj-users.html'"><span class="nav-icon">👥</span> 權限管理</div>
+    <div class="nav-item" onclick="location.href='jj-oplog.html'"><span class="nav-icon">📝</span> 操作紀錄</div>
+    <div class="nav-item" onclick="location.href='jj-warehouse.html'"><span class="nav-icon">🏭</span> 倉庫設定</div>
+    <div class="nav-section">帳號</div>
+    <div class="nav-item" onclick="location.href='jj-profile.html'"><span class="nav-icon">👤</span> 帳號設定</div>
+  </nav>
+  <div class="sidebar-user">
+    <div class="user-avatar">黃</div>
+    <div><div class="user-name">黃小翰</div><div class="user-role">系統管理員</div></div>
+    <div class="user-logout" onclick="if(confirm('確定要登出嗎？')){JJ.addLog({type:'登入/登出',prod:'—',wh:'—',chg:'—',before:'—',after:'—',user:(JJ.getUser()||{}).name||'',doc:'—',note:'使用者登出系統'});JJ.clearUser();location.href='login.html';}" style="cursor:pointer">⏻</div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div><span class="topbar-title">低庫存警示</span><span class="topbar-breadcrumb">/ 補貨管理</span></div>
+    <div class="topbar-date" id="topbarDate"></div>
+    <div class="topbar-notif">🔔<div class="notif-dot"></div></div>
+  </div>
+
+  <div class="content">
+
+    <!-- Banner -->
+    <div class="alert-banner">
+      <div class="banner-icon">🚨</div>
+      <div class="banner-text">
+        <h2>目前有 5 項商品需要補貨！</h2>
+        <p>其中 3 項為緊急（庫存低於安全庫存 30%），請盡快安排採購入庫。</p>
+      </div>
+      <div class="banner-action">
+        <button class="btn-notify" onclick="sendNotify()">📧 發送通知</button>
+      </div>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-row">
+      <div class="kpi">
+        <div class="kpi-label">緊急警示</div>
+        <div class="kpi-value" style="color:var(--red)">3</div>
+        <div class="kpi-sub">庫存 &lt; 安全庫存 30%</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">注意警示</div>
+        <div class="kpi-value" style="color:var(--yellow)">2</div>
+        <div class="kpi-sub">庫存 &lt; 安全庫存 70%</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">正常商品</div>
+        <div class="kpi-value" style="color:var(--green)">243</div>
+        <div class="kpi-sub">庫存充足</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">待處理天數</div>
+        <div class="kpi-value" style="color:var(--blue)">3</div>
+        <div class="kpi-sub">最長未補貨天數</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab(this,'all')">全部警示 (5)</div>
+      <div class="tab" onclick="switchTab(this,'critical')">🔴 緊急 (3)</div>
+      <div class="tab" onclick="switchTab(this,'warning')">🟡 注意 (2)</div>
+    </div>
+
+    <!-- Alert Cards -->
+    <div class="alerts-grid" id="alertsGrid"></div>
+
+    <!-- Alert history table -->
+    <div class="table-card">
+      <div class="table-header">
+        <div style="font-size:14px;font-weight:700;">📋 警示處理紀錄</div>
+        <div style="font-size:12px;color:var(--muted)">近 30 天</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>日期</th><th>商品名稱</th><th>警示類型</th><th>觸發庫存</th><th>安全庫存</th><th>處理方式</th><th>處理人員</th><th>狀態</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="color:var(--muted)">03/08</td><td>紙箱 A4 尺寸</td><td><span style="background:var(--yellow-dim);color:var(--yellow);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">注意</span></td><td style="color:var(--yellow);font-weight:700">85</td><td>200</td><td>已建立採購單</td><td>黃小翰</td><td><span style="background:var(--green-dim);color:var(--green);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">✓ 已處理</span></td></tr>
+          <tr><td style="color:var(--muted)">03/07</td><td>包裝泡棉 30mm</td><td><span style="background:var(--red-dim);color:var(--red);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">緊急</span></td><td style="color:var(--red);font-weight:700">18</td><td>150</td><td>緊急入庫補貨</td><td>陳小華</td><td><span style="background:var(--green-dim);color:var(--green);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">✓ 已處理</span></td></tr>
+          <tr><td style="color:var(--muted)">03/05</td><td>收縮膜 500m</td><td><span style="background:var(--red-dim);color:var(--red);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">緊急</span></td><td style="color:var(--red);font-weight:700">5</td><td>20</td><td>已通知採購部門</td><td>黃小翰</td><td><span style="background:var(--yellow-dim);color:var(--yellow);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">⏳ 處理中</span></td></tr>
+          <tr><td style="color:var(--muted)">03/03</td><td>標籤紙 A6</td><td><span style="background:var(--yellow-dim);color:var(--yellow);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">注意</span></td><td style="color:var(--yellow);font-weight:700">60</td><td>50</td><td>調撥補充</td><td>李大明</td><td><span style="background:var(--green-dim);color:var(--green);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">✓ 已處理</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const d=new Date();const days=['日','一','二','三','四','五','六'];
+document.getElementById('topbarDate').textContent=`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} (週${days[d.getDay()]})`;
+
+const alerts=[
+  {name:'防水膠帶 50mm',code:'PKG-001',wh:'大溪倉',cat:'包裝材料',stock:12,safe:100,level:'critical',days:3},
+  {name:'棧板 120x100cm',code:'PLT-001',wh:'大肚倉',cat:'棧板設備',stock:8,safe:50,level:'critical',days:3},
+  {name:'收縮膜 500m',code:'PKG-004',wh:'大肚倉',cat:'包裝材料',stock:3,safe:20,level:'critical',days:5},
+  {name:'紙箱 A4 尺寸',code:'PKG-002',wh:'大溪倉',cat:'包裝材料',stock:45,safe:200,level:'warning',days:2},
+  {name:'包裝泡棉 30mm',code:'PKG-003',wh:'大溪倉',cat:'包裝材料',stock:38,safe:150,level:'warning',days:1},
+];
+
+let currentTab='all';
+function switchTab(el,tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  currentTab=tab;
+  renderCards();
+}
+function renderCards(){
+  const data=currentTab==='all'?alerts:alerts.filter(a=>a.level===currentTab);
+  const grid=document.getElementById('alertsGrid');
+  grid.innerHTML=data.map((a,i)=>{
+    const pct=Math.round(a.stock/a.safe*100);
+    const shortage=a.safe-a.stock;
+    const col=a.level==='critical'?'var(--red)':'var(--yellow)';
+    const levelLabel=a.level==='critical'?'緊急補貨':'注意';
+    const levelClass=a.level==='critical'?'level-critical':'level-warning';
+    return `<div class="alert-card ${a.level}" style="animation-delay:${i*0.05}s">
+      <div class="ac-top">
+        <div><div class="ac-name">${a.name}</div><div class="ac-code">${a.code} · ${a.wh}</div></div>
+        <span class="ac-level ${levelClass}">${a.level==='critical'?'🔴':'🟡'} ${levelLabel}</span>
+      </div>
+      <div class="ac-bar-wrap">
+        <div class="ac-bar-label"><span>庫存水位</span><span style="color:${col};font-weight:700">${pct}%</span></div>
+        <div class="ac-bar"><div class="ac-fill" style="width:${pct}%;background:${col}"></div></div>
+      </div>
+      <div class="ac-nums">
+        <div><div class="ac-stock" style="color:${col}">${a.stock}</div><div class="ac-safe">現有庫存</div></div>
+        <div style="text-align:center"><div style="font-size:11px;color:var(--muted)">安全庫存</div><div style="font-size:16px;font-weight:700">${a.safe}</div></div>
+        <div style="text-align:right"><div class="ac-shortage" style="color:${col}">缺 ${shortage}</div><div style="font-size:11px;color:var(--muted)">需補數量</div></div>
+      </div>
+      <div class="ac-footer">
+        <button class="ac-btn ac-btn-primary" onclick="showToast('📥 已開立 ${a.name} 補貨單！')">立即補貨</button>
+        <button class="ac-btn ${a.level==='critical'?'ac-btn-ghost':'ac-btn-warn'}" onclick="showToast('📋 已建立採購申請單')">建立採購單</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function sendNotify(){showToast('📧 已發送低庫存通知給採購部門！');}
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+renderCards();
+</script>
+
+<script>
+const _u = JJ.getUser(); if (!_u) location.href = 'login.html';
+document.querySelectorAll('.user-name').forEach(el => el.textContent = _u ? _u.name : '');
+document.addEventListener('DOMContentLoaded', () => {
+  const products = JJ.getProducts();
+  const lowProds = products.filter(p => p.status==='active' && p.stock < p.safe)
+    .sort((a,b)=>(a.stock/a.safe)-(b.stock/b.safe));
+  const critical = lowProds.filter(p => p.stock/p.safe < 0.3);
+  const warning  = lowProds.filter(p => p.stock/p.safe >= 0.3);
+
+  // 更新 banner
+  document.querySelector('.alert-banner h2').textContent = `目前有 ${lowProds.length} 項商品需要補貨！`;
+  document.querySelector('.alert-banner p').textContent  = `其中 ${critical.length} 項為緊急（庫存低於安全庫存 30%），請盡快安排採購入庫。`;
+
+  // 更新 KPI
+  const kpis = document.querySelectorAll('.kpi-value');
+  if(kpis[0]) kpis[0].textContent = critical.length;
+  if(kpis[1]) kpis[1].textContent = warning.length;
+  if(kpis[2]) kpis[2].textContent = products.filter(p=>p.stock>=p.safe).length;
+
+  // 更新 badge
+  document.querySelectorAll('.nav-badge').forEach(b => b.textContent = lowProds.length);
+
+  // 渲染卡片
+  window._alertData = lowProds.map(p => ({
+    name: p.name, code: p.code, wh: p.wh, cat: p.cat,
+    stock: p.stock, safe: p.safe,
+    level: p.stock/p.safe < 0.3 ? 'critical' : 'warning',
+    days: 1,
+  }));
+  renderCards();
+});
+</script>
+
+<script>
+// ── Session 守衛 + 角色存取控制 ──
+(function(){
+  const ok = JJ.guardPage('jj-alerts');
+  if (!ok) return;
+  const _u = JJ.getUser();
+  // 更新側欄使用者名稱
+  document.querySelectorAll('.user-name').forEach(el => el.textContent = _u ? _u.name : '');
+  document.querySelectorAll('.user-role').forEach(el => el.textContent = _u ? _u.role : '');
+  document.querySelectorAll('.user-avatar').forEach(el => { if(_u) el.textContent=_u.name[0]; });
+  // Session 活動更新（滑鼠移動、點擊）
+  ['mousemove','click','keydown','scroll'].forEach(ev =>
+    document.addEventListener(ev, () => JJ.touchSession(), {passive:true, once:false})
+  );
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>JJ 庫存系統 — 調撥作業</title>
+<script src="shared_store.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f0f4f8;--sidebar:#ffffff;--panel:#ffffff;--card:#ffffff;--border:rgba(0,0,0,0.09);--red:#e03a2f;--blue:#1d6fb8;--green:#1a9e5c;--yellow:#f5a623;--purple:#9b6dff;--text:#1a2535;--muted:#64748b;}
+body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans TC',sans-serif;color:var(--text);font-size:14px;}
+.sidebar{width:220px;flex-shrink:0;background:var(--sidebar);border-right:1px solid var(--border);position:fixed;top:0;left:0;height:100vh;z-index:100;display:flex;flex-direction:column;}
+.sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px;}
+.jj-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#e03a2f,#a01e15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;flex-shrink:0;}
+.logo-text{font-size:13px;font-weight:700;color:#1a2535;}.logo-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+.nav{flex:1;padding:16px 0;overflow-y:auto;}
+.nav-section{font-size:10px;color:var(--muted);letter-spacing:.1em;padding:12px 20px 6px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;color:#64748b;font-size:13px;font-weight:500;border-left:3px solid transparent;transition:all .2s;}
+.nav-item:hover{color:var(--text);background:rgba(0,0,0,0.03);}
+.nav-item.active{color:var(--red);background:rgba(220,38,38,0.06);border-left-color:var(--red);}
+.nav-icon{font-size:16px;width:20px;text-align:center;}
+.nav-badge{margin-left:auto;padding:1px 7px;border-radius:10px;background:var(--red);color:#fff;font-size:10px;font-weight:700;}
+.sidebar-user{padding:16px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;}
+.topbar{height:60px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:12px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:16px;font-weight:700;}.topbar-bc{font-size:12px;color:var(--muted);}
+.topbar-date{margin-left:auto;font-size:12px;color:var(--muted);}
+.content{padding:28px;flex:1;display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
+.full{grid-column:1/-1;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,0.05);overflow:hidden;}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-size:14px;font-weight:700;}
+.card-body{padding:20px;}
+label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px;}
+.field{margin-bottom:14px;}
+select,input[type=text],input[type=number],textarea{width:100%;padding:9px 12px;background:rgba(0,0,0,0.03);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color .2s;}
+select:focus,input:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(29,111,184,0.1);}
+.arrow-row{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+.wh-box{flex:1;background:rgba(0,0,0,0.03);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;}
+.wh-box-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.wh-box-name{font-size:18px;font-weight:700;}
+.wh-arrow{font-size:26px;color:var(--blue);}
+.stock-preview{background:rgba(0,0,0,0.025);border-radius:8px;padding:12px 14px;margin-top:10px;font-size:13px;}
+.stock-row{display:flex;justify-content:space-between;padding:4px 0;}
+.btn{padding:10px 22px;border-radius:9px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;border:none;transition:all .2s;display:inline-flex;align-items:center;gap:7px;}
+.btn-green{background:linear-gradient(135deg,var(--green),#2a9960);color:#fff;}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--muted);}
+.btn-outline:hover{border-color:rgba(0,0,0,0.12);color:var(--text);}
+table{width:100%;border-collapse:collapse;}
+th{padding:9px 12px;font-size:11px;color:var(--muted);text-align:left;letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--border);}
+td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;}
+tbody tr:last-child td{border-bottom:none;}
+.badge{padding:2px 9px;border-radius:7px;font-size:11px;font-weight:700;}
+.toast{position:fixed;bottom:30px;right:30px;background:#1a2a1e;border:1px solid rgba(61,186,126,0.3);border-radius:12px;padding:14px 20px;font-size:13px;font-weight:600;color:var(--green);box-shadow:0 8px 24px rgba(0,0,0,.4);transform:translateY(80px);opacity:0;transition:all .3s;z-index:999;}
+.toast.show{transform:translateY(0);opacity:1;}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;width:440px;max-width:95vw;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.a1{animation:fadeUp .35s ease both}.a2{animation:fadeUp .35s .08s ease both}
+@media(max-width:800px){.content{grid-template-columns:1fr;}.full{grid-column:1;}}
+@media(max-width:640px){.sidebar{display:none;}.main{margin-left:0;}}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo"><div class="jj-icon">JJ</div><div><div class="logo-text">JJ 庫存系統</div><div class="logo-sub">倉儲／物流版</div></div></div>
+    <nav class="nav">
+    <div class="nav-section">主選單</div>
+    <div class="nav-item" onclick="location.href='jj-dashboard.html'"><span class="nav-icon">🏠</span> 儀表板</div>
+    <div class="nav-item" onclick="location.href='jj-products.html'"><span class="nav-icon">📦</span> 商品管理</div>
+    <div class="nav-item" onclick="location.href='jj-stock.html'"><span class="nav-icon">🔍</span> 庫存查詢</div>
+    <div class="nav-section">入出庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-inbound.html'"><span class="nav-icon">📥</span> 入庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-outbound.html'"><span class="nav-icon">📤</span> 出庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-transfer.html'" ><span class="nav-icon">🔄</span> 調撥作業</div>
+    <div class="nav-item" onclick="location.href='jj-logs.html'"><span class="nav-icon">📋</span> 異動紀錄</div>
+    <div class="nav-section">分析</div>
+    <div class="nav-item" onclick="location.href='jj-warroom.html'"><span class="nav-icon">🎯</span> 戰情室</div>
+    <div class="nav-section">警示與報表</div>
+    <div class="nav-item" onclick="location.href='jj-alerts.html'"><span class="nav-icon">🔔</span> 低庫存警示<span class="nav-badge" id="navBadge">0</span></div>
+    <div class="nav-item" onclick="location.href='jj-inventory.html'"><span class="nav-icon">🗂️</span> 盤點作業</div>
+    <div class="nav-item" onclick="location.href='jj-reports.html'"><span class="nav-icon">📊</span> 報表匯出</div>
+    <div class="nav-section">工具</div>
+    <div class="nav-item" onclick="location.href='jj-qrcode.html'"><span class="nav-icon">🔲</span> QR Code</div>
+    <div class="nav-section">系統管理</div>
+    <div class="nav-item" onclick="location.href='jj-users.html'"><span class="nav-icon">👥</span> 權限管理</div>
+    <div class="nav-item" onclick="location.href='jj-oplog.html'"><span class="nav-icon">📝</span> 操作紀錄</div>
+    <div class="nav-item" onclick="location.href='jj-warehouse.html'"><span class="nav-icon">🏭</span> 倉庫設定</div>
+    <div class="nav-section">帳號</div>
+    <div class="nav-item" onclick="location.href='jj-profile.html'"><span class="nav-icon">👤</span> 帳號設定</div>
+  </nav>
+  <div class="sidebar-user">
+    <div class="user-avatar" id="sAvatar">?</div>
+    <div><div style="font-size:13px;font-weight:600" id="sName">—</div><div style="font-size:10px;color:var(--muted)" id="sRole">—</div></div>
+    <div style="margin-left:auto;color:var(--muted);cursor:pointer" onclick="if(confirm('確定登出？')){JJ.clearUser();location.href='login.html';}">⏻</div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <span class="topbar-title">調撥作業</span><span class="topbar-bc">/ 倉庫間庫存移轉</span>
+    <div class="topbar-date" id="topbarDate"></div>
+  </div>
+  <div class="content">
+
+    <!-- 左：調撥表單 -->
+    <div class="card a1">
+      <div class="card-header"><div class="card-title">🔄 新增調撥單</div></div>
+      <div class="card-body">
+        <!-- 來源→目標 -->
+        <div class="arrow-row">
+          <div class="wh-box">
+            <div class="wh-box-label">來源倉庫</div>
+            <div class="wh-box-name" id="fromWhLabel">大溪倉</div>
+          </div>
+          <div class="wh-arrow">→</div>
+          <div class="wh-box">
+            <div class="wh-box-label">目標倉庫</div>
+            <div class="wh-box-name" id="toWhLabel">大肚倉</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>來源倉庫 <span style="color:var(--red)">*</span></label>
+          <select id="fromWh" onchange="updateLabels();updateProduct()">
+            <option>大溪倉</option><option>大肚倉</option><option>岡山倉</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>目標倉庫 <span style="color:var(--red)">*</span></label>
+          <select id="toWh" onchange="updateLabels()">
+            <option value="大肚倉">大肚倉</option><option value="岡山倉">岡山倉</option><option value="大溪倉">大溪倉</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>商品 <span style="color:var(--red)">*</span></label>
+          <select id="prodSel" onchange="updateProduct()">
+            <option value="">— 請選擇商品 —</option>
+          </select>
+        </div>
+        <div id="stockPreview" class="stock-preview" style="display:none">
+          <div class="stock-row"><span style="color:var(--muted)">來源庫存</span><span id="preFrom" style="font-weight:700">—</span></div>
+          <div class="stock-row"><span style="color:var(--muted)">目標庫存</span><span id="preTo" style="font-weight:700">—</span></div>
+        </div>
+        <div class="field" style="margin-top:14px">
+          <label>調撥數量 <span style="color:var(--red)">*</span></label>
+          <input type="number" id="qty" min="1" placeholder="請輸入數量" oninput="checkQty()"/>
+          <div id="qtyWarn" style="font-size:12px;color:var(--red);margin-top:5px;display:none">⚠ 超過來源庫存</div>
+        </div>
+        <div class="field">
+          <label>調撥單號</label>
+          <input type="text" id="docNo" readonly style="color:var(--muted)"/>
+        </div>
+        <div class="field">
+          <label>備註說明</label>
+          <input type="text" id="note" placeholder="例：大溪倉空間不足，移至大肚倉備料"/>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button class="btn btn-green" onclick="doTransfer()">✓ 確認調撥</button>
+          <button class="btn btn-outline" onclick="resetForm()">✕ 清除</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右：調撥紀錄 -->
+    <div class="card a2">
+      <div class="card-header"><div class="card-title">📋 調撥紀錄</div><span id="recCount" style="font-size:12px;color:var(--muted)">0 筆</span></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>調撥單號</th><th>商品</th><th>來源→目標</th><th>數量</th><th>操作人</th><th>時間</th></tr></thead>
+          <tbody id="transferLogs"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 確認 Modal -->
+<div class="modal-bg" id="confirmModal">
+  <div class="modal">
+    <div style="font-size:20px;font-weight:700;margin-bottom:14px">📦 確認調撥</div>
+    <div id="confirmDetail" style="background:rgba(0,0,0,0.03);border-radius:10px;padding:16px;margin-bottom:20px;line-height:2;font-size:14px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn btn-green" onclick="confirmTransfer()">✓ 確認執行</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const _u=JJ.getUser();if(!_u){location.href='login.html';}
+document.getElementById('sName').textContent=_u.name;
+document.getElementById('sRole').textContent=_u.role;
+document.getElementById('sAvatar').textContent=_u.name[0];
+document.getElementById('navBadge').textContent=JJ.getProducts().filter(p=>p.stock<p.safe).length;
+const d=new Date();const days=['日','一','二','三','四','五','六'];
+document.getElementById('topbarDate').textContent=`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} (週${days[d.getDay()]})`;
+
+let pendingTransfer=null;
+genDocNo();
+
+function genDocNo(){
+  const ts=Date.now().toString().slice(-6);
+  document.getElementById('docNo').value='TR-'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'-'+ts;
+}
+
+function updateLabels(){
+  document.getElementById('fromWhLabel').textContent=document.getElementById('fromWh').value;
+  document.getElementById('toWhLabel').textContent=document.getElementById('toWh').value;
+  updateProduct();
+}
+
+function updateProduct(){
+  const wh=document.getElementById('fromWh').value;
+  const products=JJ.getProducts().filter(p=>p.wh===wh&&p.status==='active');
+  const sel=document.getElementById('prodSel');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— 請選擇商品 —</option>';
+  products.forEach(p=>{
+    const o=document.createElement('option');
+    o.value=p.id; o.textContent=`${p.name}（庫存：${p.stock} ${p.unit}）`;
+    sel.appendChild(o);
+  });
+  sel.value=cur;
+  showPreview();
+}
+
+function showPreview(){
+  const fromWh=document.getElementById('fromWh').value;
+  const toWh=document.getElementById('toWh').value;
+  const pid=document.getElementById('prodSel').value;
+  if(!pid){document.getElementById('stockPreview').style.display='none';return;}
+  const products=JJ.getProducts();
+  const fromProd=products.find(p=>p.id===pid&&p.wh===fromWh);
+  const toProd=products.find(p=>p.name===(fromProd?fromProd.name:'')&&p.wh===toWh);
+  document.getElementById('stockPreview').style.display='block';
+  document.getElementById('preFrom').textContent=fromProd?`${fromProd.stock} ${fromProd.unit}`:'0';
+  document.getElementById('preTo').textContent=toProd?`${toProd.stock} ${toProd.unit}`:'0（目標倉無此品項，將自動建立）';
+  checkQty();
+}
+
+function checkQty(){
+  const pid=document.getElementById('prodSel').value;
+  const qty=parseInt(document.getElementById('qty').value)||0;
+  const fromWh=document.getElementById('fromWh').value;
+  if(!pid||!qty){document.getElementById('qtyWarn').style.display='none';return;}
+  const prod=JJ.getProducts().find(p=>p.id===pid&&p.wh===fromWh);
+  const warn=document.getElementById('qtyWarn');
+  if(prod&&qty>prod.stock){warn.style.display='block';}else{warn.style.display='none';}
+}
+
+function doTransfer(){
+  const fromWh=document.getElementById('fromWh').value;
+  const toWh=document.getElementById('toWh').value;
+  const pid=document.getElementById('prodSel').value;
+  const qty=parseInt(document.getElementById('qty').value)||0;
+  if(fromWh===toWh){alert('來源倉庫與目標倉庫不能相同');return;}
+  if(!pid){alert('請選擇商品');return;}
+  if(!qty||qty<=0){alert('請輸入正確數量');return;}
+  const products=JJ.getProducts();
+  const fromProd=products.find(p=>p.id===pid&&p.wh===fromWh);
+  if(!fromProd||fromProd.stock<qty){alert(`來源庫存不足（現有 ${fromProd?fromProd.stock:0}）`);return;}
+  pendingTransfer={fromWh,toWh,prod:fromProd,qty,docNo:document.getElementById('docNo').value,note:document.getElementById('note').value};
+  document.getElementById('confirmDetail').innerHTML=
+    `<div>📦 商品：<strong>${fromProd.name}</strong></div>
+     <div>🏭 來源：<strong>${fromWh}</strong>（現有 ${fromProd.stock} ${fromProd.unit}）</div>
+     <div>📍 目標：<strong>${toWh}</strong></div>
+     <div>📊 數量：<strong style="color:var(--blue);font-size:16px">${qty} ${fromProd.unit}</strong></div>
+     <div>📄 單號：${pendingTransfer.docNo}</div>`;
+  document.getElementById('confirmModal').classList.add('open');
+}
+
+function closeModal(){document.getElementById('confirmModal').classList.remove('open');}
+
+function confirmTransfer(){
+  if(!pendingTransfer)return;
+  const {fromWh,toWh,prod,qty,docNo,note}=pendingTransfer;
+  const products=JJ.getProducts();
+  // 扣減來源
+  const src=products.find(p=>p.id===prod.id&&p.wh===fromWh);
+  src.stock-=qty;
+  JJ.addLog({type:'調撥出',prod:prod.name,wh:fromWh,chg:`-${qty}`,before:src.stock+qty,after:src.stock,user:_u.name,doc:docNo,note:`調撥至${toWh}${note?'：'+note:''}`});
+  // 增加目標（同品名，不同倉）
+  let dst=products.find(p=>p.name===prod.name&&p.wh===toWh);
+  if(dst){dst.stock+=qty;}
+  else{
+    dst={...prod,id:'P'+Date.now(),wh:toWh,stock:qty};
+    products.push(dst);
+  }
+  JJ.addLog({type:'調撥入',prod:prod.name,wh:toWh,chg:`+${qty}`,before:dst.stock-qty,after:dst.stock,user:_u.name,doc:docNo,note:`從${fromWh}調撥${note?'：'+note:''}`});
+  JJ.saveProducts(products);
+  // 記到調撥紀錄
+  const hist=JSON.parse(localStorage.getItem('jj_transfer_logs')||'[]');
+  hist.unshift({docNo,name:prod.name,fromWh,toWh,qty,unit:prod.unit,user:_u.name,time:new Date().toLocaleString('zh-TW'),note});
+  localStorage.setItem('jj_transfer_logs',JSON.stringify(hist.slice(0,100)));
+  closeModal();
+  resetForm();
+  renderLogs();
+  showToast(`✅ 調撥完成！${prod.name} × ${qty} ${prod.unit}，${fromWh} → ${toWh}`);
+}
+
+function resetForm(){
+  document.getElementById('qty').value='';
+  document.getElementById('note').value='';
+  document.getElementById('prodSel').value='';
+  document.getElementById('stockPreview').style.display='none';
+  genDocNo();
+}
+
+function renderLogs(){
+  const logs=JSON.parse(localStorage.getItem('jj_transfer_logs')||'[]');
+  document.getElementById('recCount').textContent=logs.length+' 筆';
+  document.getElementById('transferLogs').innerHTML=logs.map(l=>`
+    <tr>
+      <td style="font-size:11px;color:var(--muted);font-family:monospace">${l.docNo}</td>
+      <td style="font-weight:600">${l.name}</td>
+      <td><span style="color:var(--blue)">${l.fromWh}</span> → <span style="color:var(--green)">${l.toWh}</span></td>
+      <td style="font-weight:700;color:var(--yellow)">${l.qty} ${l.unit}</td>
+      <td style="color:var(--muted)">${l.user}</td>
+      <td style="font-size:11px;color:var(--muted)">${l.time}</td>
+    </tr>`).join('')||'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">尚無調撥紀錄</td></tr>';
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3500);}
+window.addEventListener('load',()=>{JJ.init();updateProduct();renderLogs();});
+</script>
+</body>
+</html>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>JJ 庫存系統 — 帳號設定</title>
+<script src="shared_store.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f0f4f8;--sidebar:#ffffff;--panel:#ffffff;--card:#ffffff;--border:rgba(0,0,0,0.09);--red:#e03a2f;--blue:#1d6fb8;--green:#1a9e5c;--purple:#9b6dff;--text:#1a2535;--muted:#64748b;}
+body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans TC',sans-serif;color:var(--text);font-size:14px;}
+.sidebar{width:220px;flex-shrink:0;background:var(--sidebar);border-right:1px solid var(--border);box-shadow:2px 0 12px rgba(0,0,0,0.06);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;}
+.sidebar-logo{padding:24px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px;}
+.jj-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#e03a2f,#a01e15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;flex-shrink:0;}
+.logo-text{font-size:13px;font-weight:700;color:#1a2535;}.logo-sub{font-size:10px;color:var(--muted);}
+.nav{flex:1;padding:16px 0;overflow-y:auto;}
+.nav-section{font-size:10px;color:var(--muted);letter-spacing:.1em;padding:10px 20px 5px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;color:var(--muted);font-size:13px;border-left:3px solid transparent;transition:all .2s;}
+.nav-item:hover{color:var(--text);background:rgba(0,0,0,0.03);}
+.nav-item.active{color:var(--red);background:rgba(220,38,38,0.06);border-left-color:var(--red);}
+.nav-icon{font-size:15px;width:20px;text-align:center;}
+.sidebar-user{padding:16px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.u-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+.main{margin-left:220px;flex:1;}
+.topbar{height:60px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:16px;font-weight:700;}.topbar-bc{font-size:12px;color:var(--muted);margin-left:4px;}
+.topbar-date{margin-left:auto;font-size:12px;color:var(--muted);}
+.content{padding:28px;max-width:760px;}
+.profile-header{display:flex;align-items:center;gap:20px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:24px;}
+.big-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;flex-shrink:0;}
+.profile-name{font-size:20px;font-weight:700;margin-bottom:4px;}
+.profile-email{font-size:13px;color:var(--muted);}
+.role-chip{display:inline-block;padding:3px 12px;border-radius:8px;font-size:12px;font-weight:700;margin-top:8px;}
+.section-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:20px;}
+.section-head{padding:16px 20px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;}
+.section-body{padding:24px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-group.full{grid-column:1/-1;}
+.label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:500;}
+.label span{color:var(--red);}
+.input{padding:10px 12px;background:rgba(0,0,0,0.03);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color .2s;}
+.input:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(155,109,255,0.12);}
+.input-wrap{position:relative;}
+.input-wrap .input{width:100%;padding-right:40px;}
+.eye-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;}
+.strength-bar{height:4px;border-radius:2px;margin-top:6px;transition:width .3s,background .3s;}
+.strength-label{font-size:11px;margin-top:3px;}
+.msg-box{padding:10px 14px;border-radius:8px;font-size:13px;font-weight:500;margin-bottom:14px;display:none;}
+.msg-box.ok{background:rgba(61,186,126,0.1);border:1px solid rgba(61,186,126,0.2);color:var(--green);}
+.msg-box.err{background:rgba(224,58,47,0.1);border:1px solid rgba(224,58,47,0.2);color:var(--red);}
+.btn-save{padding:10px 26px;border-radius:10px;background:linear-gradient(135deg,var(--purple),#6b3fd4);color:#fff;border:none;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .2s;}
+.btn-save:hover{opacity:.85;}
+.btn-logout{padding:10px 20px;border-radius:10px;background:rgba(224,58,47,0.1);color:var(--red);border:1px solid rgba(224,58,47,0.2);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.info-item{background:rgba(0,0,0,0.025);border-radius:8px;padding:12px 14px;}
+.info-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.info-value{font-size:14px;font-weight:600;}
+.session-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(74,144,217,0.06);border:1px solid rgba(74,144,217,0.15);border-radius:8px;margin-bottom:14px;}
+.session-label{font-size:12px;color:var(--blue);}
+.session-time{font-size:12px;font-weight:700;color:var(--blue);font-family:monospace;}
+.must-change-banner{background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.25);border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px;font-size:13px;color:#f5a623;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.a1{animation:fadeUp .35s ease both}
+.a2{animation:fadeUp .35s .08s ease both}
+.a3{animation:fadeUp .35s .16s ease both}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo"><div class="jj-icon">JJ</div><div><div class="logo-text">JJ 庫存系統</div><div class="logo-sub">倉儲／物流版</div></div></div>
+    <nav class="nav">
+    <div class="nav-section">主選單</div>
+    <div class="nav-item" onclick="location.href='jj-dashboard.html'"><span class="nav-icon">🏠</span> 儀表板</div>
+    <div class="nav-item" onclick="location.href='jj-products.html'"><span class="nav-icon">📦</span> 商品管理</div>
+    <div class="nav-item" onclick="location.href='jj-stock.html'"><span class="nav-icon">🔍</span> 庫存查詢</div>
+    <div class="nav-section">入出庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-inbound.html'"><span class="nav-icon">📥</span> 入庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-outbound.html'"><span class="nav-icon">📤</span> 出庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-transfer.html'"><span class="nav-icon">🔄</span> 調撥作業</div>
+    <div class="nav-item" onclick="location.href='jj-logs.html'"><span class="nav-icon">📋</span> 異動紀錄</div>
+    <div class="nav-section">分析</div>
+    <div class="nav-item" onclick="location.href='jj-warroom.html'"><span class="nav-icon">🎯</span> 戰情室</div>
+    <div class="nav-section">警示與報表</div>
+    <div class="nav-item" onclick="location.href='jj-alerts.html'"><span class="nav-icon">🔔</span> 低庫存警示<span class="nav-badge" id="navBadge">0</span></div>
+    <div class="nav-item" onclick="location.href='jj-inventory.html'"><span class="nav-icon">🗂️</span> 盤點作業</div>
+    <div class="nav-item" onclick="location.href='jj-reports.html'"><span class="nav-icon">📊</span> 報表匯出</div>
+    <div class="nav-section">工具</div>
+    <div class="nav-item" onclick="location.href='jj-qrcode.html'"><span class="nav-icon">🔲</span> QR Code</div>
+    <div class="nav-section">系統管理</div>
+    <div class="nav-item" onclick="location.href='jj-users.html'"><span class="nav-icon">👥</span> 權限管理</div>
+    <div class="nav-item" onclick="location.href='jj-oplog.html'"><span class="nav-icon">📝</span> 操作紀錄</div>
+    <div class="nav-item" onclick="location.href='jj-warehouse.html'"><span class="nav-icon">🏭</span> 倉庫設定</div>
+    <div class="nav-section">帳號</div>
+    <div class="nav-item" onclick="location.href='jj-profile.html'" ><span class="nav-icon">👤</span> 帳號設定</div>
+  </nav>
+  <div class="sidebar-user">
+    <div class="u-avatar" id="sAvatar">?</div>
+    <div><div style="font-size:13px;font-weight:600" id="sName">—</div><div style="font-size:10px;color:var(--muted)" id="sRole">—</div></div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <span class="topbar-title">帳號設定</span><span class="topbar-bc">/ 個人資料與密碼管理</span>
+    <div class="topbar-date" id="topbarDate"></div>
+  </div>
+  <div class="content">
+
+    <!-- 首次登入提示 -->
+    <div class="must-change-banner" id="mustBanner" style="display:none">
+      ⚠️ <strong>首次登入，請立即修改密碼</strong>，修改後才能使用系統所有功能。
+    </div>
+
+    <!-- Profile header -->
+    <div class="profile-header a1">
+      <div class="big-avatar" id="bigAvatar">?</div>
+      <div>
+        <div class="profile-name" id="profileName">—</div>
+        <div class="profile-email" id="profileEmail">—</div>
+        <div class="role-chip" id="profileRole">—</div>
+      </div>
+      <div style="margin-left:auto">
+        <button class="btn-logout" onclick="doLogout()">⏻ 登出</button>
+      </div>
+    </div>
+
+    <!-- Session 狀態 -->
+    <div class="section-card a2">
+      <div class="section-head">🔒 登入 Session 狀態</div>
+      <div class="section-body">
+        <div class="session-bar">
+          <div class="session-label">⏱ Session 剩餘有效時間（閒置 30 分鐘自動登出）</div>
+          <div class="session-time" id="sessionTime">計算中...</div>
+        </div>
+        <div class="info-grid">
+          <div class="info-item"><div class="info-label">登入時間</div><div class="info-value" id="loginTime">—</div></div>
+          <div class="info-item"><div class="info-label">角色</div><div class="info-value" id="infoRole">—</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 修改密碼 -->
+    <div class="section-card a3">
+      <div class="section-head">🔑 修改密碼</div>
+      <div class="section-body">
+        <div class="msg-box" id="pwdMsg"></div>
+        <div class="form-grid">
+          <div class="form-group full">
+            <div class="label">目前密碼 <span>*</span></div>
+            <div class="input-wrap"><input class="input" type="password" id="oldPwd" placeholder="請輸入目前密碼"/><button class="eye-btn" onclick="toggleEye('oldPwd',this)">👁</button></div>
+          </div>
+          <div class="form-group">
+            <div class="label">新密碼 <span>*</span></div>
+            <div class="input-wrap"><input class="input" type="password" id="newPwd" placeholder="至少 6 碼" oninput="checkStrength()"/><button class="eye-btn" onclick="toggleEye('newPwd',this)">👁</button></div>
+            <div class="strength-bar" id="strengthBar" style="width:0%;background:#374151"></div>
+            <div class="strength-label" id="strengthLabel" style="color:#6b7280"></div>
+          </div>
+          <div class="form-group">
+            <div class="label">確認新密碼 <span>*</span></div>
+            <div class="input-wrap"><input class="input" type="password" id="confirmPwd" placeholder="再輸入一次新密碼"/><button class="eye-btn" onclick="toggleEye('confirmPwd',this)">👁</button></div>
+          </div>
+        </div>
+        <div style="margin-top:18px;display:flex;gap:10px;align-items:center">
+          <button class="btn-save" onclick="doChangePwd()">✓ 確認修改密碼</button>
+          <span style="font-size:12px;color:var(--muted)">修改後需重新登入</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function go(url) { location.href = url; }
+
+const _u = JJ.guardPage('jj-profile');
+if (!_u) { /* redirected */ }
+
+const user = JJ.getUser();
+if (user) {
+  document.getElementById('sAvatar').textContent = user.name[0];
+  document.getElementById('sName').textContent   = user.name;
+  document.getElementById('sRole').textContent   = user.role;
+  document.getElementById('bigAvatar').textContent = user.name[0];
+  document.getElementById('profileName').textContent  = user.name;
+  document.getElementById('profileEmail').textContent = user.email;
+
+  const roleColors = {'系統管理員':'background:rgba(224,58,47,0.12);color:#e03a2f','倉管人員':'background:rgba(74,144,217,0.12);color:#4a90d9','唯讀人員':'background:rgba(155,109,255,0.12);color:#9b6dff'};
+  const roleEl = document.getElementById('profileRole');
+  roleEl.textContent = user.role;
+  roleEl.style.cssText = roleColors[user.role] || '';
+
+  document.getElementById('infoRole').textContent = user.role;
+
+  if (user.mustChange) document.getElementById('mustBanner').style.display='flex';
+}
+
+// 日期
+const d=new Date();const days=['日','一','二','三','四','五','六'];
+document.getElementById('topbarDate').textContent=`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} (週${days[d.getDay()]})`;
+document.getElementById('loginTime').textContent = d.toLocaleTimeString('zh-TW');
+
+// Session 倒計時
+function updateSession() {
+  const t = parseInt(localStorage.getItem('jj_session_time')||'0');
+  const remain = Math.max(0, JJ.SESSION_TIMEOUT - (Date.now()-t));
+  const m = Math.floor(remain/60000);
+  const s = Math.floor((remain%60000)/1000);
+  const el = document.getElementById('sessionTime');
+  if(el) { el.textContent = `${m} 分 ${String(s).padStart(2,'0')} 秒`; el.style.color = remain<5*60000?'#e03a2f':'#4a90d9'; }
+  if (remain <= 0) { JJ.clearUser(); alert('Session 已逾時，請重新登入'); location.href='login.html'; }
+}
+updateSession(); setInterval(updateSession, 1000);
+
+// 密碼強度
+function checkStrength() {
+  const v = document.getElementById('newPwd').value;
+  const bar = document.getElementById('strengthBar');
+  const lbl = document.getElementById('strengthLabel');
+  if (!v) { bar.style.width='0'; lbl.textContent=''; return; }
+  let score = 0;
+  if (v.length >= 6) score++;
+  if (v.length >= 10) score++;
+  if (/[A-Z]/.test(v)) score++;
+  if (/[0-9]/.test(v)) score++;
+  if (/[^A-Za-z0-9]/.test(v)) score++;
+  const levels = [{w:'20%',c:'#e03a2f',t:'弱'},{w:'40%',c:'#f5a623',t:'尚可'},{w:'65%',c:'#ffd700',t:'中等'},{w:'85%',c:'#3dba7e',t:'強'},{w:'100%',c:'#00ff9d',t:'非常強'}];
+  const lv = levels[Math.min(score,4)];
+  bar.style.width=lv.w; bar.style.background=lv.c;
+  lbl.textContent='密碼強度：'+lv.t; lbl.style.color=lv.c;
+}
+
+// 顯示/隱藏密碼
+function toggleEye(id, btn) {
+  const el = document.getElementById(id);
+  el.type = el.type==='password'?'text':'password';
+  btn.textContent = el.type==='password'?'👁':'🙈';
+}
+
+// 修改密碼
+function doChangePwd() {
+  const msg = document.getElementById('pwdMsg');
+  const oldP = document.getElementById('oldPwd').value;
+  const newP = document.getElementById('newPwd').value;
+  const cfm  = document.getElementById('confirmPwd').value;
+  msg.style.display='none';
+
+  if (!oldP||!newP||!cfm) { show('err','⚠ 請填寫所有欄位'); return; }
+  if (newP !== cfm) { show('err','⚠ 新密碼與確認密碼不一致'); return; }
+
+  const result = JJ.changePassword(user.email, oldP, newP);
+  if (!result.ok) { show('err','⚠ '+result.msg); return; }
+
+  show('ok','✅ 密碼修改成功！3 秒後重新登入...');
+  document.getElementById('mustBanner').style.display='none';
+  ['oldPwd','newPwd','confirmPwd'].forEach(id=>document.getElementById(id).value='');
+  checkStrength();
+  setTimeout(()=>{ JJ.clearUser(); location.href='login.html'; }, 3000);
+}
+
+function show(type, msg) {
+  const el = document.getElementById('pwdMsg');
+  el.className='msg-box '+type; el.textContent=msg; el.style.display='block';
+}
+
+function doLogout() {
+  if (!confirm('確定要登出嗎？')) return;
+  JJ.addLog({type:'登入/登出',prod:'—',wh:'—',chg:'—',before:'—',after:'—',user:user?user.name:'',doc:'—',note:'使用者登出系統'});
+  JJ.clearUser();
+  location.href='login.html';
+}
+</script>
+</body>
+</html>

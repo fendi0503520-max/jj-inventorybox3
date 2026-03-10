@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<script src="shared_store.js"></script>
+
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JJ 簡易庫存管理系統 — 異動紀錄</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f0f4f8;--sidebar:#ffffff;--panel:#ffffff;--card:#ffffff;--border:rgba(0,0,0,0.09);--border2:rgba(0,0,0,0.15);--red:#e03a2f;--red-dim:rgba(220,38,38,0.08);--blue:#1d6fb8;--blue-dim:rgba(29,111,184,0.08);--green:#1a9e5c;--green-dim:rgba(26,158,92,0.08);--yellow:#f5a623;--yellow-dim:rgba(217,119,6,0.08);--purple:#9b6dff;--text:#1a2535;--muted:#64748b;--muted2:#e2e8f0;}
+body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans TC',sans-serif;color:var(--text);font-size:14px;}
+.sidebar{width:220px;flex-shrink:0;background:var(--sidebar);border-right:1px solid var(--border);box-shadow:2px 0 12px rgba(0,0,0,0.06);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;}
+.sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px;}
+.jj-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#e03a2f,#a01e15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;box-shadow:0 4px 12px rgba(224,58,47,0.35);flex-shrink:0;}
+.logo-text{font-size:13px;font-weight:700;color:#1a2535;}.logo-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+.nav{flex:1;padding:16px 0;overflow-y:auto;}
+.nav-section{font-size:10px;color:var(--muted);letter-spacing:.1em;padding:12px 20px 6px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;color:#64748b;font-size:13px;font-weight:500;border-left:3px solid transparent;transition:all .2s;}
+.nav-item:hover{color:var(--text);background:rgba(0,0,0,0.03);}
+.nav-item.active{color:var(--red);background:rgba(220,38,38,0.06);border-left-color:var(--red);}
+.nav-icon{font-size:16px;width:20px;text-align:center;}
+.nav-badge{margin-left:auto;padding:1px 7px;border-radius:10px;background:var(--red);color:#fff;font-size:10px;font-weight:700;}
+.sidebar-user{padding:16px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+.user-name{font-size:13px;font-weight:600;}.user-role{font-size:10px;color:var(--muted);margin-top:1px;}
+.user-logout{margin-left:auto;color:var(--muted);font-size:16px;cursor:pointer;}
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;}
+.topbar{height:60px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:16px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:16px;font-weight:700;}.topbar-breadcrumb{font-size:12px;color:var(--muted);margin-left:4px;}
+.topbar-date{margin-left:auto;font-size:12px;color:var(--muted);}
+.topbar-notif{width:34px;height:34px;border-radius:8px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;font-size:16px;}
+.notif-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--red);border:2px solid var(--panel);}
+.content{padding:28px;flex:1;}
+
+/* Filter */
+.filter-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px;animation:fadeUp .3s ease both;}
+.filter-row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;}
+.filter-group{display:flex;flex-direction:column;gap:5px;}
+.filter-label{font-size:11px;color:var(--muted);font-weight:500;letter-spacing:.04em;text-transform:uppercase;}
+.filter-input{padding:8px 12px;background:rgba(0,0,0,0.03);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color .2s;}
+.filter-input:focus{border-color:var(--blue);}
+select.filter-input{cursor:pointer;}
+.btn-search{padding:9px 20px;border-radius:9px;background:linear-gradient(135deg,var(--blue),#2d6db0);color:#fff;border:none;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;align-self:flex-end;}
+.btn-export{padding:9px 16px;border-radius:9px;background:var(--green-dim);color:var(--green);border:1px solid rgba(61,186,126,0.2);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;align-self:flex-end;}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.kpi-mini{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;animation:fadeUp .3s ease both;text-align:center;}
+.kpi-v{font-size:22px;font-weight:700;margin-bottom:4px;}.kpi-l{font-size:11px;color:var(--muted);}
+
+/* Table */
+.table-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;animation:fadeUp .4s .2s ease both;}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+thead tr{background:rgba(0,0,0,0.025);}
+th{padding:11px 16px;font-size:11px;font-weight:600;color:var(--muted);text-align:left;letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:rgba(0,0,0,0.02);}
+.type-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:600;}
+.doc-link{color:var(--blue);cursor:pointer;font-size:12px;font-weight:600;}
+.doc-link:hover{text-decoration:underline;}
+.qty-in{color:var(--blue);font-weight:700;}
+.qty-out{color:var(--green);font-weight:700;}
+.qty-adj{color:var(--yellow);font-weight:700;}
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);}
+.page-info{font-size:12px;color:var(--muted);}
+.page-btns{display:flex;gap:6px;}
+.page-btn{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--muted);transition:all .15s;}
+.page-btn:hover{border-color:var(--border2);color:var(--text);}
+.page-btn.active{background:var(--red);border-color:var(--red);color:#fff;}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+@media(max-width:900px){.kpi-row{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:640px){.sidebar{display:none;}.main{margin-left:0;}}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo"><div class="jj-icon">JJ</div><div><div class="logo-text">JJ 庫存系統</div><div class="logo-sub">倉儲／物流版</div></div></div>
+    <nav class="nav">
+    <div class="nav-section">主選單</div>
+    <div class="nav-item" onclick="location.href='jj-dashboard.html'"><span class="nav-icon">🏠</span> 儀表板</div>
+    <div class="nav-item" onclick="location.href='jj-products.html'"><span class="nav-icon">📦</span> 商品管理</div>
+    <div class="nav-item" onclick="location.href='jj-stock.html'"><span class="nav-icon">🔍</span> 庫存查詢</div>
+    <div class="nav-section">入出庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-inbound.html'"><span class="nav-icon">📥</span> 入庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-outbound.html'"><span class="nav-icon">📤</span> 出庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-transfer.html'"><span class="nav-icon">🔄</span> 調撥作業</div>
+    <div class="nav-item" onclick="location.href='jj-logs.html'" ><span class="nav-icon">📋</span> 異動紀錄</div>
+    <div class="nav-section">分析</div>
+    <div class="nav-item" onclick="location.href='jj-warroom.html'"><span class="nav-icon">🎯</span> 戰情室</div>
+    <div class="nav-section">警示與報表</div>
+    <div class="nav-item" onclick="location.href='jj-alerts.html'"><span class="nav-icon">🔔</span> 低庫存警示<span class="nav-badge" id="navBadge">0</span></div>
+    <div class="nav-item" onclick="location.href='jj-inventory.html'"><span class="nav-icon">🗂️</span> 盤點作業</div>
+    <div class="nav-item" onclick="location.href='jj-reports.html'"><span class="nav-icon">📊</span> 報表匯出</div>
+    <div class="nav-section">工具</div>
+    <div class="nav-item" onclick="location.href='jj-qrcode.html'"><span class="nav-icon">🔲</span> QR Code</div>
+    <div class="nav-section">系統管理</div>
+    <div class="nav-item" onclick="location.href='jj-users.html'"><span class="nav-icon">👥</span> 權限管理</div>
+    <div class="nav-item" onclick="location.href='jj-oplog.html'"><span class="nav-icon">📝</span> 操作紀錄</div>
+    <div class="nav-item" onclick="location.href='jj-warehouse.html'"><span class="nav-icon">🏭</span> 倉庫設定</div>
+    <div class="nav-section">帳號</div>
+    <div class="nav-item" onclick="location.href='jj-profile.html'"><span class="nav-icon">👤</span> 帳號設定</div>
+  </nav>
+  <div class="sidebar-user">
+    <div class="user-avatar">黃</div>
+    <div><div class="user-name">黃小翰</div><div class="user-role">系統管理員</div></div>
+    <div class="user-logout" onclick="if(confirm('確定要登出嗎？')){JJ.addLog({type:'登入/登出',prod:'—',wh:'—',chg:'—',before:'—',after:'—',user:(JJ.getUser()||{}).name||'',doc:'—',note:'使用者登出系統'});JJ.clearUser();location.href='login.html';}" style="cursor:pointer">⏻</div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div><span class="topbar-title">異動紀錄</span><span class="topbar-breadcrumb">/ 完整歷史紀錄</span></div>
+    <div class="topbar-date" id="topbarDate"></div>
+    <div class="topbar-notif">🔔<div class="notif-dot"></div></div>
+  </div>
+
+  <div class="content">
+    <!-- Filter -->
+    <div class="filter-card">
+      <div class="filter-row">
+        <div class="filter-group">
+          <div class="filter-label">開始日期</div>
+          <input type="date" class="filter-input" id="fDateS"/>
+        </div>
+        <div class="filter-group">
+          <div class="filter-label">結束日期</div>
+          <input type="date" class="filter-input" id="fDateE"/>
+        </div>
+        <div class="filter-group">
+          <div class="filter-label">異動類型</div>
+          <select class="filter-input" id="fType">
+            <option value="">全部類型</option>
+            <option>採購入庫</option><option>退貨入庫</option>
+            <option>銷售出庫</option><option>領料出庫</option>
+            <option>調撥作業</option><option>盤盈入庫</option><option>盤虧出庫</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <div class="filter-label">倉庫</div>
+          <select class="filter-input" id="fWh">
+            <option value="">全部倉庫</option>
+            <option>大溪倉</option><option>大肚倉</option><option>岡山倉</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <div class="filter-label">經手人</div>
+          <select class="filter-input" id="fUser">
+            <option value="">全部人員</option>
+            <option>黃小翰</option><option>陳小華</option><option>李大明</option>
+          </select>
+        </div>
+        <button class="btn-search" onclick="doFilter()">查 詢</button>
+        <button class="btn-export">⬇ 匯出</button>
+      </div>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-row">
+      <div class="kpi-mini" style="animation-delay:.05s"><div class="kpi-v" style="color:var(--text)" id="kAll">20</div><div class="kpi-l">本期筆數</div></div>
+      <div class="kpi-mini" style="animation-delay:.1s"><div class="kpi-v" style="color:var(--blue)" id="kIn">8</div><div class="kpi-l">入庫筆數</div></div>
+      <div class="kpi-mini" style="animation-delay:.15s"><div class="kpi-v" style="color:var(--green)" id="kOut">10</div><div class="kpi-l">出庫筆數</div></div>
+      <div class="kpi-mini" style="animation-delay:.2s"><div class="kpi-v" style="color:var(--yellow)" id="kAdj">2</div><div class="kpi-l">調撥筆數</div></div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:14px;font-weight:700;">📋 異動明細</div>
+        <div style="font-size:12px;color:var(--muted)" id="resultCount"></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>時間</th>
+              <th>單號</th>
+              <th>類型</th>
+              <th>商品名稱</th>
+              <th>倉庫</th>
+              <th>異動數量</th>
+              <th>異動前</th>
+              <th>異動後</th>
+              <th>經手人</th>
+              <th>備註</th>
+            </tr>
+          </thead>
+          <tbody id="logBody"></tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <div class="page-info" id="pageInfo"></div>
+        <div class="page-btns">
+          <div class="page-btn">‹</div>
+          <div class="page-btn active">1</div>
+          <div class="page-btn">2</div>
+          <div class="page-btn">3</div>
+          <div class="page-btn">›</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const d=new Date();const days=['日','一','二','三','四','五','六'];
+document.getElementById('topbarDate').textContent=`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} (週${days[d.getDay()]})`;
+const today=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+document.getElementById('fDateS').value=today;
+document.getElementById('fDateE').value=today;
+
+const typeStyle={
+  '採購入庫':{bg:'var(--blue-dim)',c:'var(--blue)'},'退貨入庫':{bg:'rgba(155,109,255,0.12)',c:'#9b6dff'},
+  '銷售出庫':{bg:'var(--green-dim)',c:'var(--green)'},'領料出庫':{bg:'var(--yellow-dim)',c:'var(--yellow)'},
+  '調撥作業':{bg:'rgba(245,166,35,0.12)',c:'#f5a623'},
+  '盤盈入庫':{bg:'var(--blue-dim)',c:'var(--blue)'},'盤虧出庫':{bg:'var(--red-dim)',c:'var(--red)'},
+};
+
+const logs=[
+  {time:'14:32',doc:'IN-20260310-003',type:'採購入庫',prod:'防水膠帶 50mm',wh:'大溪倉',chg:+200,before:12,after:212,user:'黃小翰',note:''},
+  {time:'13:15',doc:'OUT-20260310-005',type:'銷售出庫',prod:'紙箱 A4 尺寸',wh:'大溪倉',chg:-50,before:95,after:45,user:'陳小華',note:''},
+  {time:'11:48',doc:'IN-20260310-002',type:'採購入庫',prod:'棧板 120x100cm',wh:'大肚倉',chg:+30,before:8,after:38,user:'黃小翰',note:''},
+  {time:'10:20',doc:'OUT-20260310-004',type:'領料出庫',prod:'收縮膜 500m',wh:'大肚倉',chg:-10,before:13,after:3,user:'陳小華',note:''},
+  {time:'09:05',doc:'TR-20260310-001',type:'調撥作業',prod:'包裝泡棉 30mm',wh:'A→B',chg:0,before:38,after:38,user:'黃小翰',note:'大溪倉移至大肚倉'},
+  {time:'昨 16:20',doc:'IN-20260309-008',type:'退貨入庫',prod:'氣泡袋 30x40cm',wh:'大溪倉',chg:+15,before:185,after:200,user:'李大明',note:'客退'},
+  {time:'昨 15:30',doc:'OUT-20260309-012',type:'銷售出庫',prod:'標籤紙 A6',wh:'岡山倉',chg:-120,before:240,after:120,user:'李大明',note:''},
+  {time:'昨 14:00',doc:'IN-20260309-007',type:'採購入庫',prod:'封箱機',wh:'大肚倉',chg:+2,before:1,after:3,user:'黃小翰',note:''},
+  {time:'昨 11:10',doc:'OUT-20260309-011',type:'調撥出庫',prod:'手推車',wh:'A→C',chg:-2,before:10,after:8,user:'陳小華',note:''},
+  {time:'昨 09:10',doc:'IN-20260309-006',type:'採購入庫',prod:'標籤紙 A6',wh:'岡山倉',chg:+500,before:0,after:500,user:'黃小翰',note:'月度補貨'},
+  {time:'03/08 15:00',doc:'IN-20260308-005',type:'盤盈入庫',prod:'紙箱 A4 尺寸',wh:'大溪倉',chg:+10,before:85,after:95,user:'黃小翰',note:'盤點調整'},
+  {time:'03/08 10:30',doc:'OUT-20260308-009',type:'銷售出庫',prod:'防水膠帶 50mm',wh:'大溪倉',chg:-50,before:62,after:12,user:'李大明',note:''},
+  {time:'03/07 14:20',doc:'OUT-20260307-008',type:'領料出庫',prod:'包裝泡棉 30mm',wh:'大溪倉',chg:-20,before:58,after:38,user:'陳小華',note:''},
+  {time:'03/07 09:00',doc:'IN-20260307-004',type:'採購入庫',prod:'收縮膜 500m',wh:'大肚倉',chg:+20,before:0,after:20,user:'黃小翰',note:''},
+  {time:'03/06 16:00',doc:'OUT-20260306-007',type:'銷售出庫',prod:'氣泡袋 30x40cm',wh:'大溪倉',chg:-30,before:215,after:185,user:'陳小華',note:''},
+  {time:'03/06 11:00',doc:'IN-20260306-003',type:'採購入庫',prod:'棧板 120x100cm',wh:'大肚倉',chg:+20,before:0,after:20,user:'黃小翰',note:''},
+  {time:'03/05 15:30',doc:'OUT-20260305-006',type:'銷售出庫',prod:'標籤紙 A6',wh:'岡山倉',chg:-80,before:580,after:500,user:'李大明',note:''},
+  {time:'03/05 10:00',doc:'IN-20260305-002',type:'採購入庫',prod:'氣泡袋 30x40cm',wh:'大溪倉',chg:+100,before:115,after:215,user:'黃小翰',note:''},
+  {time:'03/04 14:00',doc:'OUT-20260304-005',type:'盤虧出庫',prod:'防水膠帶 50mm',wh:'大溪倉',chg:-8,before:70,after:62,user:'黃小翰',note:'盤點差異'},
+  {time:'03/04 09:00',doc:'IN-20260304-001',type:'採購入庫',prod:'紙箱 A4 尺寸',wh:'大溪倉',chg:+200,before:0,after:200,user:'黃小翰',note:'首次入庫'},
+];
+
+function render(data){
+  document.getElementById('kAll').textContent=data.length;
+  document.getElementById('kIn').textContent=data.filter(x=>x.type.includes('入庫')).length;
+  document.getElementById('kOut').textContent=data.filter(x=>x.type.includes('出庫')).length;
+  document.getElementById('kAdj').textContent=data.filter(x=>x.type.includes('調撥')).length;
+  document.getElementById('pageInfo').textContent=`共 ${data.length} 筆`;
+  document.getElementById('resultCount').textContent=`顯示 ${Math.min(data.length,20)} / ${data.length} 筆`;
+  const tb=document.getElementById('logBody');
+  if(!data.length){tb.innerHTML=`<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--muted)">查無符合條件的異動紀錄</td></tr>`;return;}
+  tb.innerHTML=data.slice(0,20).map(r=>{
+    const ts=typeStyle[r.type]||{bg:'rgba(255,255,255,0.07)',c:'#9ca3af'};
+    const chgStr=r.chg>0?`<span class="qty-in">+${r.chg}</span>`:r.chg<0?`<span class="qty-out">${r.chg}</span>`:`<span class="qty-adj">調撥</span>`;
+    return `<tr>
+      <td style="color:var(--muted);white-space:nowrap">${r.time}</td>
+      <td><span class="doc-link">${r.doc}</span></td>
+      <td><span class="type-chip" style="background:${ts.bg};color:${ts.c}">${r.type}</span></td>
+      <td style="font-weight:500">${r.prod}</td>
+      <td><span style="font-size:11px;background:var(--panel);padding:2px 7px;border-radius:5px;border:1px solid var(--border)">${r.wh}</span></td>
+      <td>${chgStr}</td>
+      <td style="color:var(--muted)">${r.before}</td>
+      <td style="font-weight:600">${r.after}</td>
+      <td style="color:var(--muted)">${r.user}</td>
+      <td style="color:var(--muted);font-size:12px">${r.note||'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function doFilter(){
+  const type=document.getElementById('fType').value;
+  const wh=document.getElementById('fWh').value;
+  const user=document.getElementById('fUser').value;
+  render(logs.filter(r=>{
+    return(!type||r.type===type)&&(!wh||r.wh.includes(wh))&&(!user||r.user===user);
+  }));
+}
+render(logs);
+</script>
+
+<script>
+const _u = JJ.getUser(); if (!_u) location.href = 'login.html';
+document.querySelectorAll('.user-name').forEach(el => el.textContent = _u ? _u.name : '');
+document.addEventListener('DOMContentLoaded', () => {
+  const logs = JJ.getLogs();
+  const tb = document.getElementById('logBody');
+  if (!tb) return;
+  const tStyle = {'入庫':{bg:'rgba(74,144,217,0.1)',c:'#4a90d9'},'出庫':{bg:'rgba(61,186,126,0.12)',c:'#3dba7e'},'商品管理':{bg:'rgba(245,166,35,0.12)',c:'#f5a623'},'登入/登出':{bg:'rgba(155,109,255,0.12)',c:'#9b6dff'}};
+  function render(list) {
+    document.getElementById('resultCount').textContent = '共 '+list.length+' 筆';
+    document.getElementById('kAll').textContent = list.length;
+    document.getElementById('kIn').textContent = list.filter(x=>x.type==='入庫').length;
+    document.getElementById('kOut').textContent = list.filter(x=>x.type==='出庫').length;
+    document.getElementById('kAdj').textContent = list.filter(x=>x.type&&x.type.includes('調撥')).length;
+    tb.innerHTML = list.slice(0,30).map(l => {
+      const s = tStyle[l.type]||{bg:'rgba(0,0,0,0.04)',c:'#9ca3af'};
+      const chgStr = String(l.chg).startsWith('+')?`<span style="color:#4a90d9;font-weight:700">${l.chg}</span>`:`<span style="color:#3dba7e;font-weight:700">${l.chg}</span>`;
+      return `<tr>
+        <td style="color:#6b7280;font-size:12px;white-space:nowrap">${l.time||'—'}</td>
+        <td>—</td>
+        <td><span style="padding:2px 9px;border-radius:7px;font-size:11px;font-weight:600;background:${s.bg};color:${s.c}">${l.type}</span></td>
+        <td style="font-weight:500">${l.prod}</td>
+        <td><span style="font-size:12px;background:rgba(0,0,0,0.04);padding:2px 7px;border-radius:5px">${l.wh||'—'}</span></td>
+        <td>${chgStr}</td>
+        <td style="color:#6b7280">${l.before}</td>
+        <td style="font-weight:600">${l.after}</td>
+        <td style="color:#6b7280">${l.user||'—'}</td>
+        <td style="color:#6b7280;font-size:12px">${l.note||'—'}</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="10" style="text-align:center;padding:30px;color:#6b7280">尚無異動紀錄</td></tr>';
+  }
+  render(logs);
+  document.querySelector('.btn-search')?.addEventListener('click', () => {
+    const type = document.getElementById('fType')?.value;
+    const wh   = document.getElementById('fWh')?.value;
+    const user = document.getElementById('fUser')?.value;
+    render(logs.filter(l => (!type||l.type===type)&&(!wh||String(l.wh).includes(wh))&&(!user||l.user===user)));
+  });
+});
+</script>
+
+<script>
+// ── Session 守衛 + 角色存取控制 ──
+(function(){
+  const ok = JJ.guardPage('jj-logs');
+  if (!ok) return;
+  const _u = JJ.getUser();
+  // 更新側欄使用者名稱
+  document.querySelectorAll('.user-name').forEach(el => el.textContent = _u ? _u.name : '');
+  document.querySelectorAll('.user-role').forEach(el => el.textContent = _u ? _u.role : '');
+  document.querySelectorAll('.user-avatar').forEach(el => { if(_u) el.textContent=_u.name[0]; });
+  // Session 活動更新（滑鼠移動、點擊）
+  ['mousemove','click','keydown','scroll'].forEach(ev =>
+    document.addEventListener(ev, () => JJ.touchSession(), {passive:true, once:false})
+  );
+})();
+</script>
+
+</body>
+</html>

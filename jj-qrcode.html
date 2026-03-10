@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>JJ 庫存系統 — 條碼／QR Code</title>
+<script src="shared_store.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f0f4f8;--sidebar:#ffffff;--panel:#ffffff;--card:#ffffff;--border:rgba(0,0,0,0.09);--red:#e03a2f;--blue:#1d6fb8;--green:#1a9e5c;--yellow:#f5a623;--purple:#9b6dff;--text:#1a2535;--muted:#64748b;}
+body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans TC',sans-serif;color:var(--text);font-size:14px;}
+.sidebar{width:220px;flex-shrink:0;background:var(--sidebar);border-right:1px solid var(--border);position:fixed;top:0;left:0;height:100vh;z-index:100;display:flex;flex-direction:column;}
+.sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px;}
+.jj-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#e03a2f,#a01e15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;flex-shrink:0;}
+.logo-text{font-size:13px;font-weight:700;color:#1a2535;}.logo-sub{font-size:10px;color:var(--muted);}
+.nav{flex:1;padding:16px 0;overflow-y:auto;}
+.nav-section{font-size:10px;color:var(--muted);letter-spacing:.1em;padding:12px 20px 6px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;color:var(--muted);font-size:13px;border-left:3px solid transparent;transition:all .2s;}
+.nav-item:hover{color:var(--text);background:rgba(0,0,0,0.03);}
+.nav-item.active{color:var(--red);background:rgba(220,38,38,0.06);border-left-color:var(--red);}
+.nav-icon{font-size:16px;width:20px;text-align:center;}
+.nav-badge{margin-left:auto;padding:1px 7px;border-radius:10px;background:var(--red);color:#fff;font-size:10px;font-weight:700;}
+.sidebar-user{padding:16px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;}
+.topbar{height:60px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:12px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:16px;font-weight:700;}.topbar-bc{font-size:12px;color:var(--muted);}
+.topbar-date{margin-left:auto;font-size:12px;color:var(--muted);}
+.content{padding:28px;flex:1;}
+.tab-bar{display:flex;gap:4px;background:rgba(0,0,0,0.03);border-radius:10px;padding:4px;margin-bottom:24px;width:fit-content;}
+.tab{padding:8px 20px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);transition:all .2s;}
+.tab.active{background:var(--card);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.3);}
+.panel{display:none;}.panel.active{display:block;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,0.05);overflow:hidden;margin-bottom:20px;}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-size:14px;font-weight:700;}
+.card-body{padding:24px;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.qr-item{background:rgba(0,0,0,0.025);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;transition:all .2s;}
+.qr-item:hover{border-color:rgba(0,0,0,0.1);background:rgba(0,0,0,0.04);}
+.qr-box{background:#fff;padding:8px;border-radius:8px;}
+.qr-name{font-size:12px;font-weight:700;text-align:center;}
+.qr-code{font-size:11px;color:var(--muted);font-family:monospace;}
+.qr-wh{font-size:11px;padding:2px 8px;background:rgba(74,144,217,0.12);color:var(--blue);border-radius:5px;}
+.btn{padding:9px 20px;border-radius:9px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;border:none;transition:all .2s;}
+.btn-blue{background:linear-gradient(135deg,var(--blue),#2d6db0);color:#fff;}
+.btn-green{background:linear-gradient(135deg,var(--green),#2a9960);color:#fff;}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--muted);}
+.btn-outline:hover{border-color:rgba(0,0,0,0.12);color:var(--text);}
+
+/* 掃碼區 */
+.scan-zone{border:2px dashed var(--border);border-radius:14px;padding:32px;text-align:center;transition:all .3s;}
+.scan-zone.active{border-color:var(--green);background:rgba(61,186,126,0.05);}
+.scan-input{width:100%;padding:14px 18px;background:rgba(0,0,0,0.03);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;font-family:'Share Tech Mono',monospace;outline:none;text-align:center;letter-spacing:.2em;margin-top:16px;}
+.scan-input:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(61,186,126,0.12);}
+.scan-result{margin-top:16px;padding:18px;background:rgba(0,0,0,0.03);border-radius:10px;text-align:left;}
+
+/* 印製樣式（列印用） */
+@media print{
+  .sidebar,.topbar,.tab-bar,.no-print{display:none!important;}
+  .main{margin-left:0;}
+  .content{padding:10px;}
+  .grid3{grid-template-columns:repeat(4,1fr);gap:8px;}
+  .qr-item{border:1px solid #ccc;break-inside:avoid;}
+  body{background:#fff;color:#000;}
+  .qr-name,.qr-code{color:#000;}
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.a1{animation:fadeUp .35s ease both}.a2{animation:fadeUp .35s .08s ease both}
+@media(max-width:900px){.grid3{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:640px){.sidebar{display:none;}.main{margin-left:0;}.grid3{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo"><div class="jj-icon">JJ</div><div><div class="logo-text">JJ 庫存系統</div><div class="logo-sub">倉儲／物流版</div></div></div>
+    <nav class="nav">
+    <div class="nav-section">主選單</div>
+    <div class="nav-item" onclick="location.href='jj-dashboard.html'"><span class="nav-icon">🏠</span> 儀表板</div>
+    <div class="nav-item" onclick="location.href='jj-products.html'"><span class="nav-icon">📦</span> 商品管理</div>
+    <div class="nav-item" onclick="location.href='jj-stock.html'"><span class="nav-icon">🔍</span> 庫存查詢</div>
+    <div class="nav-section">入出庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-inbound.html'"><span class="nav-icon">📥</span> 入庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-outbound.html'"><span class="nav-icon">📤</span> 出庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-transfer.html'"><span class="nav-icon">🔄</span> 調撥作業</div>
+    <div class="nav-item" onclick="location.href='jj-logs.html'"><span class="nav-icon">📋</span> 異動紀錄</div>
+    <div class="nav-section">分析</div>
+    <div class="nav-item" onclick="location.href='jj-warroom.html'"><span class="nav-icon">🎯</span> 戰情室</div>
+    <div class="nav-section">警示與報表</div>
+    <div class="nav-item" onclick="location.href='jj-alerts.html'"><span class="nav-icon">🔔</span> 低庫存警示<span class="nav-badge" id="navBadge">0</span></div>
+    <div class="nav-item" onclick="location.href='jj-inventory.html'"><span class="nav-icon">🗂️</span> 盤點作業</div>
+    <div class="nav-item" onclick="location.href='jj-reports.html'"><span class="nav-icon">📊</span> 報表匯出</div>
+    <div class="nav-section">工具</div>
+    <div class="nav-item" onclick="location.href='jj-qrcode.html'" ><span class="nav-icon">🔲</span> QR Code</div>
+    <div class="nav-section">系統管理</div>
+    <div class="nav-item" onclick="location.href='jj-users.html'"><span class="nav-icon">👥</span> 權限管理</div>
+    <div class="nav-item" onclick="location.href='jj-oplog.html'"><span class="nav-icon">📝</span> 操作紀錄</div>
+    <div class="nav-item" onclick="location.href='jj-warehouse.html'"><span class="nav-icon">🏭</span> 倉庫設定</div>
+    <div class="nav-section">帳號</div>
+    <div class="nav-item" onclick="location.href='jj-profile.html'"><span class="nav-icon">👤</span> 帳號設定</div>
+  </nav>
+  <div class="sidebar-user">
+    <div class="user-avatar" id="sAvatar">?</div>
+    <div><div style="font-size:13px;font-weight:600" id="sName">—</div><div style="font-size:10px;color:var(--muted)" id="sRole">—</div></div>
+    <div style="margin-left:auto;color:var(--muted);cursor:pointer" onclick="if(confirm('確定登出？')){JJ.clearUser();location.href='login.html';}">⏻</div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <span class="topbar-title">QR Code 管理</span><span class="topbar-bc">/ 條碼產生 &amp; 掃描</span>
+    <div class="topbar-date" id="topbarDate"></div>
+  </div>
+  <div class="content">
+
+    <div class="tab-bar no-print">
+      <div class="tab active" onclick="switchTab('gen',this)">🔲 產生 QR Code 標籤</div>
+      <div class="tab" onclick="switchTab('scan',this)">📷 掃碼快速入出庫</div>
+    </div>
+
+    <!-- 產生標籤 -->
+    <div class="panel active a1" id="panel-gen">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🔲 商品 QR Code 標籤</div>
+          <div class="no-print" style="display:flex;gap:8px">
+            <select id="filterWh" onchange="renderQR()" style="padding:7px 11px;background:rgba(0,0,0,0.03);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;font-family:inherit;outline:none">
+              <option value="">全部倉庫</option><option>大溪倉</option><option>大肚倉</option><option>岡山倉</option>
+            </select>
+            <button class="btn btn-blue" onclick="window.print()">🖨 列印標籤</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="grid3" id="qrGrid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 掃碼快速入出庫 -->
+    <div class="panel a1" id="panel-scan">
+      <div class="card">
+        <div class="card-header"><div class="card-title">📷 掃碼快速入出庫</div></div>
+        <div class="card-body">
+          <div class="scan-zone" id="scanZone">
+            <div style="font-size:42px;margin-bottom:12px">🔍</div>
+            <div style="font-size:15px;font-weight:700;margin-bottom:6px">輸入或掃描商品條碼</div>
+            <div style="font-size:12px;color:var(--muted)">連接條碼掃描槍後，點擊下方輸入框並掃描商品標籤</div>
+            <input type="text" class="scan-input" id="scanInput" placeholder="掃描或輸入商品編號..." autocomplete="off"
+              oninput="onScanInput(this.value)" onkeydown="if(event.key==='Enter')confirmScan()" onfocus="document.getElementById('scanZone').classList.add('active')" onblur="document.getElementById('scanZone').classList.remove('active')"/>
+          </div>
+
+          <div id="scanResult" style="display:none;margin-top:16px">
+            <div class="scan-result">
+              <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+                <div id="scanImg" style="width:56px;height:56px;border-radius:10px;background:rgba(0,0,0,0.05);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">📦</div>
+                <div>
+                  <div style="font-size:16px;font-weight:700" id="scanName">—</div>
+                  <div style="font-size:12px;color:var(--muted);margin-top:2px" id="scanInfo">—</div>
+                </div>
+                <div style="margin-left:auto;text-align:right">
+                  <div style="font-size:24px;font-weight:700" id="scanStock">0</div>
+                  <div style="font-size:11px;color:var(--muted)" id="scanUnit">—</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <select id="scanType" style="padding:8px 12px;background:rgba(0,0,0,0.05);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:inherit;outline:none">
+                  <option value="in">入庫</option><option value="out">出庫</option>
+                </select>
+                <input type="number" id="scanQty" value="1" min="1" style="width:80px;padding:8px 10px;background:rgba(0,0,0,0.05);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:inherit;outline:none;text-align:center"/>
+                <button class="btn btn-green" onclick="confirmScan()">✓ 確認</button>
+                <button class="btn btn-outline" onclick="clearScan()">✕ 取消</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="scanHistory" style="margin-top:20px">
+            <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em">最近掃碼紀錄</div>
+            <div id="scanHistList" style="font-size:13px;color:var(--muted);text-align:center;padding:16px">尚無掃碼紀錄</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const _u=JJ.getUser();if(!_u){location.href='login.html';}
+document.getElementById('sName').textContent=_u.name;
+document.getElementById('sRole').textContent=_u.role;
+document.getElementById('sAvatar').textContent=_u.name[0];
+document.getElementById('navBadge').textContent=JJ.getProducts().filter(p=>p.stock<p.safe).length;
+const d=new Date();const days=['日','一','二','三','四','五','六'];
+document.getElementById('topbarDate').textContent=`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} (週${days[d.getDay()]})`;
+
+function switchTab(id, el) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-'+id).classList.add('active');
+}
+
+// ── QR Code 產生 ──
+function renderQR() {
+  const wh = document.getElementById('filterWh').value;
+  let products = JJ.getProducts().filter(p=>p.status==='active');
+  if (wh) products = products.filter(p=>p.wh===wh);
+  const grid = document.getElementById('qrGrid');
+  grid.innerHTML = '';
+  products.forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'qr-item';
+    item.title = '點擊放大';
+    const qrBox = document.createElement('div');
+    qrBox.className = 'qr-box';
+    item.appendChild(qrBox);
+    item.innerHTML += `<div class="qr-name">${p.name}</div><div class="qr-code">${p.code}</div><div class="qr-wh">${p.wh}</div><div style="font-size:11px;color:var(--muted)">庫存：${p.stock} ${p.unit}</div>`;
+    grid.appendChild(item);
+    try {
+      new QRCode(qrBox, {
+        text: JSON.stringify({id:p.id,code:p.code,name:p.name}),
+        width:100, height:100,
+        colorDark:'#000000', colorLight:'#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    } catch(e) { qrBox.textContent = p.code; }
+    item.addEventListener('click', () => showBigQR(p));
+  });
+}
+
+function showBigQR(p) {
+  const win = window.open('','_blank','width=400,height=500');
+  win.document.write(`<!DOCTYPE html><html><head><title>${p.name}</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
+  </head><body style="background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;padding:20px">
+  <div id="qr" style="padding:10px;border:2px solid #000;border-radius:8px;margin-bottom:14px"></div>
+  <div style="font-size:18px;font-weight:700;text-align:center">${p.name}</div>
+  <div style="font-size:14px;color:#666;margin:4px 0">${p.code}｜${p.wh}</div>
+  <div style="font-size:12px;color:#666">庫存：${p.stock} ${p.unit}</div>
+  <button onclick="window.print()" style="margin-top:14px;padding:8px 20px;border-radius:6px;background:#000;color:#fff;border:none;cursor:pointer;font-size:14px">列印</button>
+  <script>new QRCode(document.getElementById('qr'),{text:'${JSON.stringify({id:p.id,code:p.code,name:p.name}).replace(/'/g,"\\'")}',width:200,height:200});<\/script>
+  </body></html>`);
+  win.document.close();
+}
+
+// ── 掃碼功能 ──
+let scanTarget = null;
+let scanHistArr = [];
+
+function onScanInput(val) {
+  if (!val) { document.getElementById('scanResult').style.display='none'; scanTarget=null; return; }
+  const products = JJ.getProducts();
+  const p = products.find(x => x.code === val.trim() || x.id === val.trim());
+  if (p) {
+    scanTarget = p;
+    document.getElementById('scanResult').style.display='block';
+    document.getElementById('scanName').textContent = p.name;
+    document.getElementById('scanInfo').textContent = `${p.code} ｜ ${p.wh} ｜ ${p.cat}`;
+    document.getElementById('scanStock').textContent = p.stock;
+    document.getElementById('scanUnit').textContent = p.unit;
+    // 圖片
+    const imgs = JSON.parse(localStorage.getItem('jj_product_imgs')||'{}');
+    const imgEl = document.getElementById('scanImg');
+    if (imgs[p.id]) imgEl.innerHTML=`<img src="${imgs[p.id]}" style="width:56px;height:56px;border-radius:10px;object-fit:cover"/>`;
+    else imgEl.textContent='📦';
+  } else {
+    scanTarget = null;
+    document.getElementById('scanResult').style.display='none';
+  }
+}
+
+function confirmScan() {
+  if (!scanTarget) { alert('找不到此商品，請確認條碼'); return; }
+  const type = document.getElementById('scanType').value;
+  const qty  = parseInt(document.getElementById('scanQty').value)||1;
+  const products = JJ.getProducts();
+  const p = products.find(x=>x.id===scanTarget.id);
+  if (type==='out' && p.stock<qty) { alert(`庫存不足（現有 ${p.stock}）`); return; }
+  const before = p.stock;
+  p.stock += type==='in' ? qty : -qty;
+  JJ.saveProducts(products);
+  JJ.addLog({type:type==='in'?'入庫':'出庫',prod:p.name,wh:p.wh,chg:(type==='in'?'+':'-')+qty,before,after:p.stock,user:_u.name,doc:'SCAN-'+Date.now(),note:'條碼掃描作業'});
+  // 更新顯示
+  document.getElementById('scanStock').textContent = p.stock;
+  // 加入掃碼歷史
+  scanHistArr.unshift({name:p.name,type:type==='in'?'入庫':'出庫',qty,time:new Date().toLocaleTimeString('zh-TW')});
+  if (scanHistArr.length>10) scanHistArr.pop();
+  renderScanHist();
+  clearScan();
+  // flash
+  const zone = document.getElementById('scanZone');
+  zone.style.borderColor=type==='in'?'#3dba7e':'#4a90d9';
+  setTimeout(()=>{zone.style.borderColor='';},1500);
+}
+
+function clearScan() {
+  document.getElementById('scanInput').value='';
+  document.getElementById('scanResult').style.display='none';
+  scanTarget=null;
+  document.getElementById('scanInput').focus();
+}
+
+function renderScanHist() {
+  const el = document.getElementById('scanHistList');
+  if (!scanHistArr.length) { el.textContent='尚無掃碼紀錄'; el.style.textAlign='center'; return; }
+  el.style.textAlign='left';
+  el.innerHTML = scanHistArr.map(r=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.04)">
+    <span style="font-weight:600">${r.name}</span>
+    <span style="color:${r.type==='入庫'?'var(--blue)':'var(--green)'}">${r.type} ${r.qty}</span>
+    <span style="color:var(--muted);font-size:12px">${r.time}</span>
+  </div>`).join('');
+}
+
+window.addEventListener('load',()=>{ JJ.init(); renderQR(); });
+</script>
+</body>
+</html>

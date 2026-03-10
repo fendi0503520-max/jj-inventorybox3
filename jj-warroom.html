@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JJ 戰情室 — 即時庫存分析</title>
+<script src="shared_store.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f0f4f8;--sidebar:#ffffff;--panel:#ffffff;--card:#ffffff;--border:rgba(0,120,180,0.12);--border2:rgba(0,140,200,0.25);--red:#ff3b3b;--red-dim:rgba(220,38,38,0.08);--blue:#0070cc;--blue-dim:rgba(0,120,200,0.08);--green:#00a96e;--green-dim:rgba(0,169,110,0.08);--yellow:#ffd700;--yellow-dim:rgba(217,119,6,0.08);--purple:#bf5fff;--text:#1a2535;--muted:#64748b;--muted2:#e2e8f0;}
+html,body{height:100%;background:var(--bg);font-family:'Noto Sans TC',sans-serif;color:var(--text);overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,100,180,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,100,180,0.05) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(29,111,184,0.04),transparent);pointer-events:none;z-index:0;}
+.layout{display:flex;min-height:100vh;position:relative;z-index:1;}
+.sidebar{width:200px;flex-shrink:0;background:var(--sidebar);border-right:1px solid var(--border);box-shadow:2px 0 12px rgba(0,0,0,0.06);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;}
+.sidebar-logo{padding:20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.jj-icon{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#e03a2f,#a01e15);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;flex-shrink:0;}
+.logo-text{font-size:12px;font-weight:700;}.logo-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+.nav{flex:1;padding:14px 0;overflow-y:auto;}
+.nav-section{font-size:9px;color:var(--muted);letter-spacing:.12em;padding:10px 16px 4px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:8px;padding:9px 16px;cursor:pointer;color:var(--muted);font-size:12px;font-weight:500;border-left:2px solid transparent;transition:all .2s;}
+.nav-item:hover{color:var(--text);background:rgba(0,180,255,0.04);}
+.nav-item.active{color:var(--blue);background:rgba(0,180,255,0.06);border-left-color:var(--blue);}
+.nav-icon{font-size:14px;width:18px;text-align:center;}
+.nav-badge{margin-left:auto;padding:1px 6px;border-radius:8px;background:#ff3b3b;color:#fff;font-size:9px;font-weight:700;}
+.sidebar-user{padding:14px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.user-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.user-name{font-size:12px;font-weight:600;}.user-role{font-size:10px;color:var(--muted);margin-top:1px;}
+.main{margin-left:200px;flex:1;display:flex;flex-direction:column;}
+.topbar{height:56px;background:rgba(255,255,255,0.97);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);box-shadow:0 1px 8px rgba(0,0,0,0.06);display:flex;align-items:center;padding:0 24px;gap:12px;position:sticky;top:0;z-index:50;}
+.live-badge{padding:3px 10px;border-radius:6px;background:var(--red-dim);color:var(--red);font-size:10px;font-weight:700;border:1px solid rgba(255,59,59,0.25);animation:blink 2s ease infinite;letter-spacing:.08em;}
+.topbar-title{font-size:15px;font-weight:900;letter-spacing:.06em;background:linear-gradient(135deg,var(--blue),var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.topbar-clock{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--blue);margin-left:auto;letter-spacing:.1em;}
+.auto-status{font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid rgba(0,255,157,0.2);background:rgba(0,255,157,0.06);color:var(--green);font-family:'Share Tech Mono',monospace;}
+.topbar-btn{padding:5px 12px;border-radius:6px;background:var(--blue-dim);border:1px solid var(--border2);color:var(--blue);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;}
+.topbar-btn:hover{background:rgba(0,180,255,0.18);}
+.content{padding:18px 22px;flex:1;}
+/* KPI */
+.kpi-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.04);padding:12px 14px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.3);}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.kpi.blue::before{background:linear-gradient(90deg,var(--blue),transparent);}
+.kpi.green::before{background:linear-gradient(90deg,var(--green),transparent);}
+.kpi.red::before{background:linear-gradient(90deg,var(--red),transparent);}
+.kpi.yellow::before{background:linear-gradient(90deg,var(--yellow),transparent);}
+.kpi.purple::before{background:linear-gradient(90deg,var(--purple),transparent);}
+.kpi.cyan::before{background:linear-gradient(90deg,#00e5ff,transparent);}
+.kpi-v{font-family:'Share Tech Mono',monospace;font-size:24px;font-weight:700;line-height:1;margin-bottom:3px;}
+.kpi-l{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;}
+.kpi-sub{font-size:9px;margin-top:3px;font-family:'Share Tech Mono',monospace;}
+/* Grid */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
+.full{grid-column:1/-1;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.05);overflow:hidden;}
+.card-head{padding:12px 16px 8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);}
+.card-sub{font-size:9px;color:var(--muted);margin-top:2px;}
+.card-body{padding:14px 16px;}
+canvas{display:block;max-width:100%;}
+/* Legend */
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);}
+.ldot{width:8px;height:8px;border-radius:50%;}
+/* Donut */
+.donut-wrap{display:flex;align-items:center;gap:16px;}
+.donut-stats{flex:1;}
+.dstat{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);}
+.dstat:last-child{border-bottom:none;}
+.dstat-l{display:flex;align-items:center;gap:6px;font-size:11px;}
+.dstat-v{font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700;}
+/* Heat */
+.heat-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.heat-lbl{width:115px;font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;}
+.heat-track{flex:1;height:16px;background:var(--muted2);border-radius:3px;overflow:hidden;position:relative;}
+.heat-fill{height:100%;border-radius:3px;}
+.heat-pct{position:absolute;right:5px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:700;font-family:'Share Tech Mono',monospace;}
+/* Supplier table */
+.sup-table{width:100%;border-collapse:collapse;}
+.sup-table th{padding:7px 10px;font-size:9px;font-weight:600;color:var(--muted);text-align:left;letter-spacing:.07em;text-transform:uppercase;border-bottom:1px solid var(--border);background:rgba(0,180,255,0.03);}
+.sup-table td{padding:8px 10px;border-bottom:1px solid rgba(0,180,255,0.05);font-size:11px;vertical-align:middle;}
+.sup-table tbody tr:last-child td{border-bottom:none;}
+.sup-table tbody tr:hover td{background:rgba(0,180,255,0.03);}
+.urgency{display:inline-block;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:700;}
+/* Turnover */
+.turnover-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+.tv-item{background:rgba(0,180,255,0.04);border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center;}
+.tv-name{font-size:10px;color:var(--muted);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tv-val{font-family:'Share Tech Mono',monospace;font-size:16px;font-weight:700;}
+.tv-unit{font-size:9px;color:var(--muted);margin-top:2px;}
+/* Mini log table */
+.log-table{width:100%;border-collapse:collapse;}
+.log-table th{padding:6px 10px;font-size:9px;font-weight:600;color:var(--muted);text-align:left;letter-spacing:.07em;text-transform:uppercase;border-bottom:1px solid var(--border);}
+.log-table td{padding:8px 10px;border-bottom:1px solid rgba(0,180,255,0.04);font-size:11px;vertical-align:middle;}
+.log-table tbody tr:last-child td{border-bottom:none;}
+/* Scan line */
+.scan-line{position:fixed;top:0;left:200px;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,120,200,0.15),transparent);animation:scan 5s linear infinite;pointer-events:none;z-index:200;}
+/* Animations */
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes scan{0%{top:-1%}100%{top:101%}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.a1{animation:fadeUp .35s ease both}
+.a2{animation:fadeUp .35s .08s ease both}
+.a3{animation:fadeUp .35s .16s ease both}
+.a4{animation:fadeUp .35s .24s ease both}
+.a5{animation:fadeUp .35s .32s ease both}
+@media(max-width:1100px){.kpi-strip{grid-template-columns:repeat(3,1fr)}.grid2,.grid3{grid-template-columns:1fr}}
+@media(max-width:680px){.sidebar{display:none}.main{margin-left:0}.kpi-strip{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="scan-line"></div>
+<aside class="sidebar">
+  <div class="sidebar-logo"><div class="jj-icon">JJ</div><div><div class="logo-text">JJ 庫存系統</div><div class="logo-sub">倉儲／物流版</div></div></div>
+    <nav class="nav">
+    <div class="nav-section">主選單</div>
+    <div class="nav-item" onclick="location.href='jj-dashboard.html'"><span class="nav-icon">🏠</span> 儀表板</div>
+    <div class="nav-item" onclick="location.href='jj-products.html'"><span class="nav-icon">📦</span> 商品管理</div>
+    <div class="nav-item" onclick="location.href='jj-stock.html'"><span class="nav-icon">🔍</span> 庫存查詢</div>
+    <div class="nav-section">入出庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-inbound.html'"><span class="nav-icon">📥</span> 入庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-outbound.html'"><span class="nav-icon">📤</span> 出庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-transfer.html'"><span class="nav-icon">🔄</span> 調撥作業</div>
+    <div class="nav-item" onclick="location.href='jj-logs.html'"><span class="nav-icon">📋</span> 異動紀錄</div>
+    <div class="nav-section">分析</div>
+    <div class="nav-item" onclick="location.href='jj-warroom.html'" ><span class="nav-icon">🎯</span> 戰情室</div>
+    <div class="nav-section">警示與報表</div>
+    <div class="nav-item" onclick="location.href='jj-alerts.html'"><span class="nav-icon">🔔</span> 低庫存警示<span class="nav-badge" id="navBadge">0</span></div>
+    <div class="nav-item" onclick="location.href='jj-inventory.html'"><span class="nav-icon">🗂️</span> 盤點作業</div>
+    <div class="nav-item" onclick="location.href='jj-reports.html'"><span class="nav-icon">📊</span> 報表匯出</div>
+    <div class="nav-section">工具</div>
+    <div class="nav-item" onclick="location.href='jj-qrcode.html'"><span class="nav-icon">🔲</span> QR Code</div>
+    <div class="nav-section">系統管理</div>
+    <div class="nav-item" onclick="location.href='jj-users.html'"><span class="nav-icon">👥</span> 權限管理</div>
+    <div class="nav-item" onclick="location.href='jj-oplog.html'"><span class="nav-icon">📝</span> 操作紀錄</div>
+    <div class="nav-item" onclick="location.href='jj-warehouse.html'"><span class="nav-icon">🏭</span> 倉庫設定</div>
+    <div class="nav-section">帳號</div>
+    <div class="nav-item" onclick="location.href='jj-profile.html'"><span class="nav-icon">👤</span> 帳號設定</div>
+  </nav>
+  <div class="sidebar-user">
+    <div class="user-avatar" id="sideAvatar">?</div>
+    <div><div class="user-name" id="sideUser">—</div><div class="user-role" id="sideRole">—</div></div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <span class="live-badge">● LIVE</span>
+    <div class="topbar-title">戰情室 WAR ROOM</div>
+    <div class="auto-status" id="autoStatus">⟳ 30s</div>
+    <div class="topbar-clock" id="clock">--:--:--</div>
+    <button class="topbar-btn" onclick="refresh()">↻ 重整</button>
+    <button class="topbar-btn" onclick="location.href='jj-timeline.html'" style="background:rgba(0,255,157,0.08);border-color:rgba(0,255,157,0.2);color:var(--green)">📅 時序</button>
+  </div>
+
+  <div class="content">
+    <!-- KPI 6格 -->
+    <div class="kpi-strip a1" id="kpiStrip">
+      <div class="kpi blue"><div class="kpi-v" style="color:var(--blue)" id="kTotal">0</div><div class="kpi-l">商品總項</div></div>
+      <div class="kpi green"><div class="kpi-v" style="color:var(--green)" id="kNormal">0</div><div class="kpi-l">庫存正常</div></div>
+      <div class="kpi yellow"><div class="kpi-v" style="color:var(--yellow)" id="kWarn">0</div><div class="kpi-l">注意補貨</div></div>
+      <div class="kpi red"><div class="kpi-v" style="color:var(--red)" id="kCrit">0</div><div class="kpi-l">緊急補貨</div></div>
+      <div class="kpi purple"><div class="kpi-v" style="color:var(--purple)" id="kLogs">0</div><div class="kpi-l">累計異動</div></div>
+      <div class="kpi cyan"><div class="kpi-v" style="color:#00e5ff" id="kTurnover">—</div><div class="kpi-l">平均週轉天</div><div class="kpi-sub" id="kTurnoverSub" style="color:var(--muted)"></div></div>
+    </div>
+
+    <!-- Row1: 健康度 + 折線 -->
+    <div class="grid2 a2">
+      <div class="card">
+        <div class="card-head"><div><div class="card-title">庫存健康度</div><div class="card-sub">各等級商品比例</div></div></div>
+        <div class="card-body">
+          <div class="donut-wrap">
+            <canvas id="donutChart" width="150" height="150" style="flex-shrink:0"></canvas>
+            <div class="donut-stats" id="donutStats"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><div class="card-title">入出庫趨勢</div><div class="card-sub">近 7 天</div></div></div>
+        <div class="card-body">
+          <canvas id="lineChart" height="150" style="width:100%"></canvas>
+          <div class="legend"><div class="legend-item"><div class="ldot" style="background:var(--blue)"></div>入庫</div><div class="legend-item"><div class="ldot" style="background:var(--green)"></div>出庫</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row2: 倉庫使用率 + 圓餅 + 週轉率 -->
+    <div class="grid3 a3">
+      <div class="card">
+        <div class="card-head"><div><div class="card-title">倉庫容量使用率</div><div class="card-sub">即時</div></div></div>
+        <div class="card-body" id="whBody"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><div class="card-title">商品分類分布</div><div class="card-sub">庫存件數佔比</div></div></div>
+        <div class="card-body">
+          <canvas id="pieChart" height="160" style="width:100%"></canvas>
+          <div class="legend" id="pieLegend"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><div class="card-title">庫存週轉率 TOP 5</div><div class="card-sub">消耗速度 / 估計天數</div></div></div>
+        <div class="card-body" id="turnoverBody"></div>
+      </div>
+    </div>
+
+    <!-- Row3: 低庫存熱力 -->
+    <div class="card a4" style="margin-bottom:14px">
+      <div class="card-head">
+        <div><div class="card-title">低庫存熱力圖</div><div class="card-sub">庫存水位 vs 安全庫存</div></div>
+        <div style="font-size:9px;color:var(--muted)">紅 = 緊急 　黃 = 注意 　綠 = 正常</div>
+      </div>
+      <div class="card-body" id="heatBody"></div>
+    </div>
+
+    <!-- Row4: 採購建議 + 近期紀錄 -->
+    <div class="grid2 a5">
+      <div class="card">
+        <div class="card-head"><div><div class="card-title">🛒 供應商採購建議</div><div class="card-sub">根據庫存水位與週轉率自動產生</div></div></div>
+        <div style="overflow-x:auto">
+          <table class="sup-table">
+            <thead><tr><th>商品</th><th>現有</th><th>安全</th><th>建議採購量</th><th>預計供應商</th><th>緊急度</th></tr></thead>
+            <tbody id="supBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><div class="card-title">近期異動紀錄</div><div class="card-sub">最新 8 筆</div></div></div>
+        <div style="overflow-x:auto">
+          <table class="log-table">
+            <thead><tr><th>時間</th><th>類型</th><th>商品</th><th>量</th><th>人員</th></tr></thead>
+            <tbody id="logsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── 登入守衛 ──
+const _u = JJ.getUser(); if(!_u){location.href='login.html';} if (!_u) location.href = 'login.html';
+document.getElementById('sideUser').textContent = _u.name;
+document.getElementById('sideRole').textContent = _u.role;
+document.getElementById('sideAvatar').textContent = _u.name[0];
+
+// ── 時鐘 ──
+let countdown = 30;
+function tick() {
+  const n = new Date();
+  document.getElementById('clock').textContent =
+    String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+':'+String(n.getSeconds()).padStart(2,'0');
+  countdown--;
+  document.getElementById('autoStatus').textContent = '⟳ ' + countdown + 's';
+  if (countdown <= 0) { countdown = 30; refresh(); }
+}
+tick(); setInterval(tick, 1000);
+
+// ── Canvas helpers ──
+function drawDonut(canvas, segs) {
+  const ctx = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+  const cx=W/2, cy=H/2, r=W/2-12, ir=W/2-30;
+  let s = -Math.PI/2;
+  const total = segs.reduce((a,x)=>a+x.v,0)||1;
+  segs.forEach(seg => {
+    const a = seg.v/total*Math.PI*2;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,s,s+a); ctx.closePath();
+    ctx.fillStyle=seg.c; ctx.fill(); s+=a;
+  });
+  ctx.beginPath(); ctx.arc(cx,cy,ir,0,Math.PI*2); ctx.fillStyle='#0d1e35'; ctx.fill();
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle='#e8f4ff'; ctx.font='bold 16px Share Tech Mono'; ctx.fillText(total,cx,cy-7);
+  ctx.fillStyle='#4a7090'; ctx.font='10px Noto Sans TC'; ctx.fillText('總項',cx,cy+8);
+}
+
+function drawLine(canvas, labels, d1, d2) {
+  const W = canvas.parentElement.offsetWidth - 32 || 400, H = 150;
+  canvas.width=W; canvas.height=H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  const p={t:8,r:10,b:24,l:32};
+  const gW=W-p.l-p.r, gH=H-p.t-p.b;
+  const max=Math.max(...d1,...d2,1);
+  const xP=i=>p.l+i*(gW/(labels.length-1));
+  const yP=v=>p.t+gH-(v/max)*gH;
+  for(let i=0;i<=3;i++){
+    const y=p.t+gH*(1-i/3);
+    ctx.strokeStyle='rgba(0,180,255,0.07)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(p.l,y); ctx.lineTo(W-p.r,y); ctx.stroke();
+    ctx.fillStyle='#4a7090'; ctx.font='8px Share Tech Mono'; ctx.textAlign='right';
+    ctx.fillText(Math.round(max*i/3),p.l-3,y+3);
+  }
+  labels.forEach((l,i)=>{ ctx.fillStyle='#4a7090'; ctx.font='8px Noto Sans TC'; ctx.textAlign='center'; ctx.fillText(l,xP(i),H-6); });
+  [[d1,'#00b4ff'],[d2,'#00ff9d']].forEach(([ds,col])=>{
+    const g=ctx.createLinearGradient(0,p.t,0,H-p.b);
+    g.addColorStop(0,col+'33'); g.addColorStop(1,col+'00');
+    ctx.beginPath(); ctx.moveTo(xP(0),yP(ds[0]));
+    ds.forEach((v,i)=>{ if(i>0) ctx.lineTo(xP(i),yP(v)); });
+    ctx.lineTo(xP(ds.length-1),H-p.b); ctx.lineTo(xP(0),H-p.b); ctx.closePath();
+    ctx.fillStyle=g; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(xP(0),yP(ds[0]));
+    ds.forEach((v,i)=>{ if(i>0) ctx.lineTo(xP(i),yP(v)); });
+    ctx.strokeStyle=col; ctx.lineWidth=2; ctx.stroke();
+    ds.forEach((v,i)=>{ ctx.beginPath(); ctx.arc(xP(i),yP(v),3,0,Math.PI*2); ctx.fillStyle=col; ctx.fill(); });
+  });
+}
+
+function drawPie(canvas, segs) {
+  const W = canvas.parentElement.offsetWidth - 32 || 280, H = 160;
+  canvas.width=W; canvas.height=H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  const cx=W/2, cy=H/2, r=Math.min(W/2,H/2)-10;
+  const total=segs.reduce((a,x)=>a+x.v,0)||1;
+  let s=-Math.PI/2;
+  segs.forEach(seg=>{
+    const a=seg.v/total*Math.PI*2;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,s,s+a); ctx.closePath();
+    ctx.fillStyle=seg.c; ctx.fill();
+    ctx.strokeStyle='#0d1e35'; ctx.lineWidth=2; ctx.stroke();
+    const pct=Math.round(seg.v/total*100);
+    if(pct>6){
+      const mx=cx+Math.cos(s+a/2)*r*0.65, my=cy+Math.sin(s+a/2)*r*0.65;
+      ctx.fillStyle='#fff'; ctx.font='bold 10px Share Tech Mono'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(pct+'%',mx,my);
+    }
+    s+=a;
+  });
+}
+
+// ── 主邏輯 ──
+function refresh() {
+  countdown = 30;
+  const products = JJ.getProducts();
+  const logs     = JJ.getLogs();
+
+  // KPI
+  const total  = products.length;
+  const normal = products.filter(p=>p.stock>=p.safe).length;
+  const warn   = products.filter(p=>p.stock>=p.safe*0.3&&p.stock<p.safe).length;
+  const crit   = products.filter(p=>p.stock<p.safe*0.3).length;
+  document.getElementById('kTotal').textContent = total;
+  document.getElementById('kNormal').textContent = normal;
+  document.getElementById('kWarn').textContent = warn;
+  document.getElementById('kCrit').textContent = crit;
+  document.getElementById('kLogs').textContent = logs.length;
+  document.getElementById('navBadge').textContent = warn + crit;
+
+  // ── 週轉率計算 ──
+  // 用異動 log 中出庫量 / 現有庫存，估算每日消耗，換算為庫存可用天數
+  const outLogs = logs.filter(l=>l.type==='出庫');
+  const prodConsume = {};
+  outLogs.forEach(l=>{
+    const p = products.find(x=>x.name===l.prod);
+    if(p){ prodConsume[p.id]=(prodConsume[p.id]||0)+Math.abs(parseInt(l.chg)||0); }
+  });
+  // 用 log 總天數估算（模擬 30 天）
+  const DAYS = 30;
+  const turnoverData = products.map(p=>{
+    const consumed = prodConsume[p.id]||0;
+    const dailyRate = consumed/DAYS;
+    const days = dailyRate>0 ? Math.round(p.stock/dailyRate) : 999;
+    return { ...p, dailyRate: dailyRate.toFixed(1), turnoverDays: Math.min(days,999) };
+  }).filter(p=>p.dailyRate>0).sort((a,b)=>a.turnoverDays-b.turnoverDays);
+
+  const avgDays = turnoverData.length>0
+    ? Math.round(turnoverData.reduce((s,p)=>s+p.turnoverDays,0)/turnoverData.length)
+    : null;
+  document.getElementById('kTurnover').textContent = avgDays ? avgDays+'天' : '—';
+  document.getElementById('kTurnoverSub').textContent = avgDays ? '平均可用天數' : '尚無出庫資料';
+
+  // ── Donut ──
+  const dSegs=[{l:'正常',v:normal,c:'#00ff9d'},{l:'注意',v:warn,c:'#ffd700'},{l:'緊急',v:crit,c:'#ff3b3b'}];
+  drawDonut(document.getElementById('donutChart'), dSegs);
+  document.getElementById('donutStats').innerHTML = dSegs.map(s=>`
+    <div class="dstat"><div class="dstat-l"><div class="ldot" style="background:${s.c}"></div>${s.l}</div>
+    <div class="dstat-v" style="color:${s.c}">${s.v}</div></div>`).join('');
+
+  // ── Line ──
+  const base=[[80,120,90,160,110,140,95],[60,90,100,80,130,100,120]];
+  const labels=[]; const inArr=[]; const outArr=[];
+  for(let i=6;i>=0;i--){
+    const dt=new Date(); dt.setDate(dt.getDate()-i);
+    labels.push((dt.getMonth()+1)+'/'+(dt.getDate()));
+    inArr.push(base[0][6-i]);
+    outArr.push(base[1][6-i]);
+  }
+  setTimeout(()=>drawLine(document.getElementById('lineChart'),labels,inArr,outArr),50);
+
+  // ── Wh bars ──
+  const whData=[{n:'大溪倉',used:4280,cap:6000,c:'#ffd700'},{n:'大肚倉',used:3200,cap:7000,c:'#00ff9d'},{n:'岡山倉',used:3800,cap:5000,c:'#ff3b3b'}];
+  document.getElementById('whBody').innerHTML = whData.map(w=>{
+    const pct=Math.round(w.used/w.cap*100);
+    return `<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px">
+        <span style="color:${w.c};font-weight:700">${w.n}</span>
+        <span style="color:var(--muted)">${w.used.toLocaleString()} / ${w.cap.toLocaleString()}</span>
+      </div>
+      <div style="height:20px;background:var(--muted2);border-radius:4px;overflow:hidden;position:relative">
+        <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,${w.c}88,${w.c});border-radius:4px;transition:width 1s ease"></div>
+        <span style="position:absolute;right:7px;top:50%;transform:translateY(-50%);font-family:'Share Tech Mono',monospace;font-size:10px;font-weight:700;color:#fff">${pct}%</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // ── Pie ──
+  const catMap={}; products.forEach(p=>{ catMap[p.cat]=(catMap[p.cat]||0)+p.stock; });
+  const pieC=['#00b4ff','#00ff9d','#ffd700','#ff3b3b','#bf5fff','#ff9500'];
+  const pieSegs=Object.entries(catMap).map(([k,v],i)=>({l:k,v,c:pieC[i%pieC.length]}));
+  setTimeout(()=>drawPie(document.getElementById('pieChart'),pieSegs),50);
+  document.getElementById('pieLegend').innerHTML=pieSegs.map(s=>`<div class="legend-item"><div class="ldot" style="background:${s.c}"></div>${s.l}</div>`).join('');
+
+  // ── 週轉率 top5 ──
+  const tv5 = turnoverData.slice(0,5);
+  if(tv5.length) {
+    document.getElementById('turnoverBody').innerHTML=`<div class="turnover-grid">${
+      tv5.map(p=>{
+        const col=p.turnoverDays<7?'#ff3b3b':p.turnoverDays<30?'#ffd700':'#00ff9d';
+        return `<div class="tv-item"><div class="tv-name" title="${p.name}">${p.name.slice(0,6)}</div>
+          <div class="tv-val" style="color:${col}">${p.turnoverDays<999?p.turnoverDays:'∞'}</div>
+          <div class="tv-unit">可用天</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:3px">${p.dailyRate}/天</div></div>`;
+      }).join('')
+    }</div>`;
+  } else {
+    document.getElementById('turnoverBody').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted);font-size:11px">尚無出庫資料<br>執行出庫後自動計算</div>';
+  }
+
+  // ── 熱力圖 ──
+  const sorted=[...products].sort((a,b)=>(a.stock/a.safe)-(b.stock/b.safe)).slice(0,10);
+  document.getElementById('heatBody').innerHTML = sorted.length ? sorted.map(p=>{
+    const pct=Math.min(100,Math.round(p.stock/p.safe*100));
+    const col=pct<30?'#ff3b3b':pct<70?'#ffd700':'#00ff9d';
+    return `<div class="heat-row">
+      <div class="heat-lbl" title="${p.name}">${p.name}</div>
+      <div class="heat-track"><div class="heat-fill" style="width:${pct}%;background:linear-gradient(90deg,${col}55,${col})">
+        <span class="heat-pct" style="color:${pct>45?'#000':'#fff'}">${pct}%</span></div></div>
+      <div style="width:50px;text-align:right;font-family:'Share Tech Mono',monospace;font-size:9px;color:${col};flex-shrink:0">${p.stock}/${p.safe}</div>
+    </div>`;
+  }).join('') : '<div style="padding:16px;text-align:center;color:var(--muted);font-size:11px">🎉 目前沒有低庫存商品</div>';
+
+  // ── 採購建議 ──
+  const needBuy = products.filter(p=>p.stock<p.safe).sort((a,b)=>(a.stock/a.safe)-(b.stock/b.safe));
+  const suppliers=['統一倉儲','大洋包材','台灣棧板','三重搬運','優適耗材'];
+  const supMap={'包裝材料':'大洋包材','棧板設備':'台灣棧板','搬運工具':'三重搬運','耗材':'優適耗材'};
+  document.getElementById('supBody').innerHTML = needBuy.length ? needBuy.slice(0,8).map(p=>{
+    const pct=Math.round(p.stock/p.safe*100);
+    const urgency=pct<30?{l:'緊急',c:'#ff3b3b',bg:'rgba(255,59,59,0.12)'}:
+                  pct<60?{l:'注意',c:'#ffd700',bg:'rgba(255,215,0,0.12)'}:
+                         {l:'一般',c:'#00ff9d',bg:'rgba(0,255,157,0.1)'};
+    const suggest=Math.ceil((p.safe-p.stock)*1.5);
+    const sup=supMap[p.cat]||suppliers[Math.floor(Math.random()*suppliers.length)];
+    return `<tr>
+      <td style="font-weight:600">${p.name}<div style="font-size:9px;color:var(--muted)">${p.code}</div></td>
+      <td style="font-family:'Share Tech Mono',monospace;color:${urgency.c}">${p.stock}</td>
+      <td style="color:var(--muted)">${p.safe}</td>
+      <td style="font-family:'Share Tech Mono',monospace;color:var(--blue);font-weight:700">+${suggest}</td>
+      <td style="color:var(--muted)">${sup}</td>
+      <td><span class="urgency" style="background:${urgency.bg};color:${urgency.c}">${urgency.l}</span></td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">🎉 目前無需採購補貨</td></tr>';
+
+  // ── 近期紀錄 ──
+  const tC={'入庫':'#00b4ff','出庫':'#00ff9d','商品管理':'#ffd700','登入/登出':'#bf5fff'};
+  document.getElementById('logsBody').innerHTML = logs.slice(0,8).map(l=>`
+    <tr>
+      <td style="color:var(--muted);font-size:10px;white-space:nowrap;font-family:'Share Tech Mono',monospace">${(l.time||'—').slice(-8)}</td>
+      <td><span style="padding:1px 7px;border-radius:4px;font-size:9px;font-weight:700;background:rgba(0,0,0,0.04);color:${tC[l.type]||'#9ca3af'}">${l.type}</span></td>
+      <td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${l.prod}</td>
+      <td style="font-family:'Share Tech Mono',monospace;font-size:11px;font-weight:700;color:${String(l.chg).startsWith('+')?'#00b4ff':'#00ff9d'}">${l.chg}</td>
+      <td style="color:var(--muted)">${l.user||'—'}</td>
+    </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--muted)">尚無紀錄</td></tr>';
+}
+
+window.addEventListener('load', ()=>{ JJ.init(); refresh(); });
+window.addEventListener('resize', ()=>{ setTimeout(refresh,100); });
+</script>
+
+<script>
+// ── Session 守衛 + 角色存取控制 ──
+(function(){
+  const ok = JJ.guardPage('jj-warroom');
+  if (!ok) return;
+  const _u = JJ.getUser();
+  // 更新側欄使用者名稱
+  document.querySelectorAll('.user-name').forEach(el => el.textContent = _u ? _u.name : '');
+  document.querySelectorAll('.user-role').forEach(el => el.textContent = _u ? _u.role : '');
+  document.querySelectorAll('.user-avatar').forEach(el => { if(_u) el.textContent=_u.name[0]; });
+  // Session 活動更新（滑鼠移動、點擊）
+  ['mousemove','click','keydown','scroll'].forEach(ev =>
+    document.addEventListener(ev, () => JJ.touchSession(), {passive:true, once:false})
+  );
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JJ 簡易庫存管理系統 — 報表匯出</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f0f4f8;--sidebar:#ffffff;--panel:#ffffff;--card:#ffffff;--border:rgba(0,0,0,0.09);--border2:rgba(0,0,0,0.15);--red:#e03a2f;--red-dim:rgba(220,38,38,0.08);--blue:#1d6fb8;--blue-dim:rgba(29,111,184,0.08);--green:#1a9e5c;--green-dim:rgba(26,158,92,0.08);--yellow:#f5a623;--yellow-dim:rgba(217,119,6,0.08);--purple:#9b6dff;--purple-dim:rgba(124,58,237,0.08);--text:#1a2535;--muted:#64748b;--muted2:#e2e8f0;}
+body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans TC',sans-serif;color:var(--text);font-size:14px;}
+.sidebar{width:220px;flex-shrink:0;background:var(--sidebar);border-right:1px solid var(--border);box-shadow:2px 0 12px rgba(0,0,0,0.06);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;}
+.sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px;}
+.jj-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#e03a2f,#a01e15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;box-shadow:0 4px 12px rgba(224,58,47,0.35);flex-shrink:0;}
+.logo-text{font-size:13px;font-weight:700;color:#1a2535;}.logo-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+.nav{flex:1;padding:16px 0;overflow-y:auto;}
+.nav-section{font-size:10px;color:var(--muted);letter-spacing:.1em;padding:12px 20px 6px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;color:#64748b;font-size:13px;font-weight:500;border-left:3px solid transparent;transition:all .2s;}
+.nav-item:hover{color:var(--text);background:rgba(0,0,0,0.03);}
+.nav-item.active{color:var(--red);background:rgba(220,38,38,0.06);border-left-color:var(--red);}
+.nav-icon{font-size:16px;width:20px;text-align:center;}
+.nav-badge{margin-left:auto;padding:1px 7px;border-radius:10px;background:var(--red);color:#fff;font-size:10px;font-weight:700;}
+.sidebar-user{padding:16px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+.user-name{font-size:13px;font-weight:600;}.user-role{font-size:10px;color:var(--muted);margin-top:1px;}
+.user-logout{margin-left:auto;color:var(--muted);font-size:16px;cursor:pointer;}
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;}
+.topbar{height:60px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:16px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:16px;font-weight:700;}.topbar-breadcrumb{font-size:12px;color:var(--muted);margin-left:4px;}
+.topbar-date{margin-left:auto;font-size:12px;color:var(--muted);}
+.topbar-notif{width:34px;height:34px;border-radius:8px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;font-size:16px;}
+.notif-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--red);border:2px solid var(--panel);}
+.content{padding:28px;flex:1;}
+
+/* Report cards grid */
+.report-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;margin-bottom:28px;}
+.report-card{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;animation:fadeUp .4s ease both;transition:transform .2s,border-color .2s;}
+.report-card:hover{transform:translateY(-2px);border-color:var(--border2);}
+.report-card:nth-child(1){animation-delay:.05s;}
+.report-card:nth-child(2){animation-delay:.1s;}
+.report-card:nth-child(3){animation-delay:.15s;}
+.report-card:nth-child(4){animation-delay:.2s;}
+.report-card:nth-child(5){animation-delay:.25s;}
+.report-card:nth-child(6){animation-delay:.3s;}
+.rc-header{padding:20px 20px 16px;display:flex;align-items:flex-start;gap:14px;}
+.rc-icon{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.rc-title{font-size:15px;font-weight:700;margin-bottom:4px;}
+.rc-desc{font-size:12px;color:var(--muted);line-height:1.5;}
+.rc-body{padding:0 20px 16px;}
+.rc-params{display:flex;flex-direction:column;gap:10px;}
+.param-row{display:flex;gap:10px;}
+.param-group{flex:1;display:flex;flex-direction:column;gap:4px;}
+.param-label{font-size:11px;color:var(--muted);font-weight:500;letter-spacing:.04em;text-transform:uppercase;}
+.param-input{padding:8px 11px;background:rgba(0,0,0,0.03);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color .2s;}
+.param-input:focus{border-color:var(--blue);}
+select.param-input{cursor:pointer;}
+.rc-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;}
+.btn-excel{flex:1;padding:9px;border-radius:9px;background:var(--green-dim);color:var(--green);border:1px solid rgba(61,186,126,0.2);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;}
+.btn-excel:hover{background:rgba(61,186,126,0.2);}
+.btn-pdf{flex:1;padding:9px;border-radius:9px;background:var(--red-dim);color:var(--red);border:1px solid rgba(224,58,47,0.2);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;}
+.btn-pdf:hover{background:rgba(224,58,47,0.2);}
+.btn-preview{padding:9px 14px;border-radius:9px;background:var(--panel);border:1px solid var(--border);color:var(--muted);font-size:13px;font-family:inherit;cursor:pointer;transition:all .15s;}
+.btn-preview:hover{color:var(--text);border-color:var(--border2);}
+
+/* History */
+.history-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;animation:fadeUp .4s .3s ease both;}
+.history-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+table{width:100%;border-collapse:collapse;}
+thead tr{background:rgba(0,0,0,0.025);}
+th{padding:10px 16px;font-size:11px;font-weight:600;color:var(--muted);text-align:left;letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--border);}
+td{padding:11px 16px;border-bottom:1px solid var(--border);font-size:13px;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:rgba(0,0,0,0.02);}
+.fmt-badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;}
+.dl-btn{padding:4px 12px;border-radius:6px;background:var(--blue-dim);color:var(--blue);border:1px solid rgba(74,144,217,0.2);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;}
+
+/* Progress modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;}
+.modal-overlay.show{display:flex;}
+.modal{background:var(--panel);border:1px solid var(--border2);border-radius:16px;width:360px;padding:32px;text-align:center;animation:popIn .25s ease;}
+@keyframes popIn{from{opacity:0;transform:scale(.95);}to{opacity:1;transform:scale(1);}}
+.modal-icon{font-size:40px;margin-bottom:16px;}
+.modal h3{font-size:18px;font-weight:700;margin-bottom:8px;}
+.modal p{font-size:13px;color:var(--muted);margin-bottom:20px;}
+.progress-bar{height:6px;background:var(--muted2);border-radius:3px;overflow:hidden;margin-bottom:16px;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--blue));border-radius:3px;width:0%;transition:width .1s;}
+.modal-status{font-size:12px;color:var(--muted);}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+@media(max-width:900px){.report-grid{grid-template-columns:1fr;}}
+@media(max-width:640px){.sidebar{display:none;}.main{margin-left:0;}}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo"><div class="jj-icon">JJ</div><div><div class="logo-text">JJ 庫存系統</div><div class="logo-sub">倉儲／物流版</div></div></div>
+    <nav class="nav">
+    <div class="nav-section">主選單</div>
+    <div class="nav-item" onclick="location.href='jj-dashboard.html'"><span class="nav-icon">🏠</span> 儀表板</div>
+    <div class="nav-item" onclick="location.href='jj-products.html'"><span class="nav-icon">📦</span> 商品管理</div>
+    <div class="nav-item" onclick="location.href='jj-stock.html'"><span class="nav-icon">🔍</span> 庫存查詢</div>
+    <div class="nav-section">入出庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-inbound.html'"><span class="nav-icon">📥</span> 入庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-outbound.html'"><span class="nav-icon">📤</span> 出庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-transfer.html'"><span class="nav-icon">🔄</span> 調撥作業</div>
+    <div class="nav-item" onclick="location.href='jj-logs.html'"><span class="nav-icon">📋</span> 異動紀錄</div>
+    <div class="nav-section">分析</div>
+    <div class="nav-item" onclick="location.href='jj-warroom.html'"><span class="nav-icon">🎯</span> 戰情室</div>
+    <div class="nav-section">警示與報表</div>
+    <div class="nav-item" onclick="location.href='jj-alerts.html'"><span class="nav-icon">🔔</span> 低庫存警示<span class="nav-badge" id="navBadge">0</span></div>
+    <div class="nav-item" onclick="location.href='jj-inventory.html'"><span class="nav-icon">🗂️</span> 盤點作業</div>
+    <div class="nav-item" onclick="location.href='jj-reports.html'" ><span class="nav-icon">📊</span> 報表匯出</div>
+    <div class="nav-section">工具</div>
+    <div class="nav-item" onclick="location.href='jj-qrcode.html'"><span class="nav-icon">🔲</span> QR Code</div>
+    <div class="nav-section">系統管理</div>
+    <div class="nav-item" onclick="location.href='jj-users.html'"><span class="nav-icon">👥</span> 權限管理</div>
+    <div class="nav-item" onclick="location.href='jj-oplog.html'"><span class="nav-icon">📝</span> 操作紀錄</div>
+    <div class="nav-item" onclick="location.href='jj-warehouse.html'"><span class="nav-icon">🏭</span> 倉庫設定</div>
+    <div class="nav-section">帳號</div>
+    <div class="nav-item" onclick="location.href='jj-profile.html'"><span class="nav-icon">👤</span> 帳號設定</div>
+  </nav>
+  <div class="sidebar-user">
+    <div class="user-avatar">黃</div>
+    <div><div class="user-name">黃小翰</div><div class="user-role">系統管理員</div></div>
+    <div class="user-logout" onclick="if(confirm('確定要登出嗎？')){JJ.addLog({type:'登入/登出',prod:'—',wh:'—',chg:'—',before:'—',after:'—',user:(JJ.getUser()||{}).name||'',doc:'—',note:'使用者登出系統'});JJ.clearUser();location.href='login.html';}" style="cursor:pointer">⏻</div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div><span class="topbar-title">報表匯出</span><span class="topbar-breadcrumb">/ Excel · PDF</span></div>
+    <div class="topbar-date" id="topbarDate"></div>
+    <div class="topbar-notif">🔔<div class="notif-dot"></div></div>
+  </div>
+
+  <div class="content">
+
+    <div class="report-grid">
+
+      <!-- 1. 即時庫存報表 -->
+      <div class="report-card">
+        <div class="rc-header">
+          <div class="rc-icon" style="background:var(--blue-dim)">📦</div>
+          <div><div class="rc-title">即時庫存報表</div><div class="rc-desc">所有商品目前庫存數量、安全庫存、庫存水位，依分類彙整</div></div>
+        </div>
+        <div class="rc-body">
+          <div class="rc-params">
+            <div class="param-row">
+              <div class="param-group"><div class="param-label">倉庫</div><select class="param-input"><option>全部倉庫</option><option>大溪倉</option><option>大肚倉</option><option>岡山倉</option></select></div>
+              <div class="param-group"><div class="param-label">分類</div><select class="param-input"><option>全部分類</option><option>包裝材料</option><option>棧板設備</option><option>搬運工具</option></select></div>
+            </div>
+            <div class="param-row">
+              <div class="param-group"><div class="param-label">狀態篩選</div><select class="param-input"><option>全部</option><option>低庫存</option><option>正常</option></select></div>
+            </div>
+          </div>
+        </div>
+        <div class="rc-footer">
+          <button class="btn-excel" onclick="startExport('即時庫存報表','Excel')">📊 Excel</button>
+          <button class="btn-pdf" onclick="startExport('即時庫存報表','PDF')">📄 PDF</button>
+          <button class="btn-preview">預覽</button>
+        </div>
+      </div>
+
+      <!-- 2. 入出庫明細報表 -->
+      <div class="report-card">
+        <div class="rc-header">
+          <div class="rc-icon" style="background:var(--green-dim)">📋</div>
+          <div><div class="rc-title">入出庫明細報表</div><div class="rc-desc">指定期間內所有入庫、出庫、調撥的完整異動明細</div></div>
+        </div>
+        <div class="rc-body">
+          <div class="rc-params">
+            <div class="param-row">
+              <div class="param-group"><div class="param-label">開始日期</div><input type="date" class="param-input" id="r2s"/></div>
+              <div class="param-group"><div class="param-label">結束日期</div><input type="date" class="param-input" id="r2e"/></div>
+            </div>
+            <div class="param-row">
+              <div class="param-group"><div class="param-label">異動類型</div><select class="param-input"><option>全部</option><option>入庫</option><option>出庫</option><option>調撥</option></select></div>
+              <div class="param-group"><div class="param-label">倉庫</div><select class="param-input"><option>全部</option><option>大溪倉</option><option>大肚倉</option><option>岡山倉</option></select></div>
+            </div>
+          </div>
+        </div>
+        <div class="rc-footer">
+          <button class="btn-excel" onclick="startExport('入出庫明細報表','Excel')">📊 Excel</button>
+          <button class="btn-pdf" onclick="startExport('入出庫明細報表','PDF')">📄 PDF</button>
+          <button class="btn-preview">預覽</button>
+        </div>
+      </div>
+
+      <!-- 3. 月結彙總報表 -->
+      <div class="report-card">
+        <div class="rc-header">
+          <div class="rc-icon" style="background:var(--yellow-dim)">📈</div>
+          <div><div class="rc-title">月結彙總報表</div><div class="rc-desc">每月入出庫總量統計、期初期末庫存、各商品月度趨勢</div></div>
+        </div>
+        <div class="rc-body">
+          <div class="rc-params">
+            <div class="param-row">
+              <div class="param-group"><div class="param-label">年度</div><select class="param-input"><option>2026</option><option>2025</option></select></div>
+              <div class="param-group"><div class="param-label">月份</div><select class="param-input"><option>全年</option><option>1月</option><option>2月</option><option>3月</option><option>4月</option><option>5月</option><option>6月</option><option>7月</option><option>8月</option><option>9月</option><option>10月</option><option>11月</option><option>12月</option></select></div>
+            </div>
+          </div>
+        </div>
+        <div class="rc-footer">
+          <button class="btn-excel" onclick="startExport('月結彙總報表','Excel')">📊 Excel</button>
+          <button class="btn-pdf" onclick="startExport('月結彙總報表','PDF')">📄 PDF</button>
+          <button class="btn-preview">預覽</button>
+        </div>
+      </div>
+
+      <!-- 4. 低庫存警示報表 -->
+      <div class="report-card">
+        <div class="rc-header">
+          <div class="rc-icon" style="background:var(--red-dim)">🔔</div>
+          <div><div class="rc-title">低庫存警示報表</div><div class="rc-desc">目前低於安全庫存的商品清單、缺貨數量及建議補貨量</div></div>
+        </div>
+        <div class="rc-body">
+          <div class="rc-params">
+            <div class="param-row">
+              <div class="param-group"><div class="param-label">警示等級</div><select class="param-input"><option>全部</option><option>緊急</option><option>注意</option></select></div>
+              <div class="param-group"><div class="param-label">倉庫</div><select class="param-input"><option>全部</option><option>大溪倉</option><option>大肚倉</option><option>岡山倉</option></select></div>
+            </div>
+          </div>
+        </div>
+        <div class="rc-footer">
+          <button class="btn-excel" onclick="startExport('低庫存警示報表','Excel')">📊 Excel</button>
+          <button class="btn-pdf" onclick="startExport('低庫存警示報表','PDF')">📄 PDF</button>
+          <button class="btn-preview">預覽</button>
+        </div>
+      </div>
+
+      <!-- 5. 盤點差異報表 -->
+      <div class="report-card">
+        <div class="rc-header">
+          <div class="rc-icon" style="background:var(--purple-dim)">🗂️</div>
+          <div><div class="rc-title">盤點差異報表</div><div class="rc-desc">盤點作業後的系統庫存與實際庫存差異分析報告</div></div>
+        </div>
+        <div class="rc-body">
+          <div class="rc-params">
+            <div class="param-row">
+              <div class="param-group"><div class="param-label">盤點日期</div><input type="date" class="param-input"/></div>
+              <div class="param-group"><div class="param-label">倉庫</div><select class="param-input"><option>全部</option><option>大溪倉</option><option>大肚倉</option><option>岡山倉</option></select></div>
+            </div>
+          </div>
+        </div>
+        <div class="rc-footer">
+          <button class="btn-excel" onclick="startExport('盤點差異報表','Excel')">📊 Excel</button>
+          <button class="btn-pdf" onclick="startExport('盤點差異報表','PDF')">📄 PDF</button>
+          <button class="btn-preview">預覽</button>
+        </div>
+      </div>
+
+      <!-- 6. 供應商採購報表 -->
+      <div class="report-card">
+        <div class="rc-header">
+          <div class="rc-icon" style="background:rgba(245,166,35,0.12)">🚚</div>
+          <div><div class="rc-title">供應商採購報表</div><div class="rc-desc">各供應商的採購金額、頻率、商品項目統計分析</div></div>
+        </div>
+        <div class="rc-body">
+          <div class="rc-params">
+            <div class="param-row">
+              <div class="param-group"><div class="param-label">開始日期</div><input type="date" class="param-input"/></div>
+              <div class="param-group"><div class="param-label">結束日期</div><input type="date" class="param-input"/></div>
+            </div>
+            <div class="param-row">
+              <div class="param-group"><div class="param-label">供應商</div><select class="param-input"><option>全部</option><option>台灣包材有限公司</option><option>新光物流設備</option><option>全球倉儲耗材</option></select></div>
+            </div>
+          </div>
+        </div>
+        <div class="rc-footer">
+          <button class="btn-excel" onclick="startExport('供應商採購報表','Excel')">📊 Excel</button>
+          <button class="btn-pdf" onclick="startExport('供應商採購報表','PDF')">📄 PDF</button>
+          <button class="btn-preview">預覽</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- History -->
+    <div class="history-card">
+      <div class="history-header">
+        <div style="font-size:14px;font-weight:700;">⏱ 近期匯出紀錄</div>
+        <div style="font-size:12px;color:var(--muted)">最近 10 筆</div>
+      </div>
+      <table>
+        <thead><tr><th>匯出時間</th><th>報表名稱</th><th>格式</th><th>期間</th><th>匯出人員</th><th>操作</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--muted)">今日 14:20</td><td>即時庫存報表</td><td><span class="fmt-badge" style="background:var(--green-dim);color:var(--green)">Excel</span></td><td style="color:var(--muted)">2026/03/10</td><td>黃小翰</td><td><button class="dl-btn">⬇ 下載</button></td></tr>
+          <tr><td style="color:var(--muted)">今日 10:05</td><td>入出庫明細報表</td><td><span class="fmt-badge" style="background:var(--red-dim);color:var(--red)">PDF</span></td><td style="color:var(--muted)">03/01~03/10</td><td>陳小華</td><td><button class="dl-btn">⬇ 下載</button></td></tr>
+          <tr><td style="color:var(--muted)">昨日 17:00</td><td>月結彙總報表</td><td><span class="fmt-badge" style="background:var(--green-dim);color:var(--green)">Excel</span></td><td style="color:var(--muted)">2026年2月</td><td>黃小翰</td><td><button class="dl-btn">⬇ 下載</button></td></tr>
+          <tr><td style="color:var(--muted)">03/08 09:30</td><td>低庫存警示報表</td><td><span class="fmt-badge" style="background:var(--red-dim);color:var(--red)">PDF</span></td><td style="color:var(--muted)">2026/03/08</td><td>李大明</td><td><button class="dl-btn">⬇ 下載</button></td></tr>
+          <tr><td style="color:var(--muted)">03/05 16:45</td><td>盤點差異報表</td><td><span class="fmt-badge" style="background:var(--green-dim);color:var(--green)">Excel</span></td><td style="color:var(--muted)">2026/03/05</td><td>黃小翰</td><td><button class="dl-btn">⬇ 下載</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- Progress Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-icon">⚙️</div>
+    <h3 id="modalTitle">正在產生報表…</h3>
+    <p id="modalDesc">請稍候，系統正在匯出資料</p>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="modal-status" id="modalStatus">準備中…</div>
+  </div>
+</div>
+
+<script>
+const d=new Date();const days=['日','一','二','三','四','五','六'];
+document.getElementById('topbarDate').textContent=`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} (週${days[d.getDay()]})`;
+const today=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+document.querySelectorAll('input[type="date"]').forEach(el=>el.value=today);
+
+const steps=[
+  {pct:20,msg:'讀取資料庫…'},
+  {pct:45,msg:'整理報表資料…'},
+  {pct:70,msg:'套用格式樣板…'},
+  {pct:90,msg:'產生檔案中…'},
+  {pct:100,msg:'完成！'},
+];
+
+function startExport(name,fmt){
+  document.getElementById('modalTitle').textContent=`正在產生「${name}」`;
+  document.getElementById('modalDesc').textContent=`格式：${fmt}　請稍候…`;
+  document.getElementById('progressFill').style.width='0%';
+  document.getElementById('modalOverlay').classList.add('show');
+  let i=0;
+  const run=()=>{
+    if(i>=steps.length){
+      setTimeout(()=>{
+        document.getElementById('modalOverlay').classList.remove('show');
+        alert(`✅ 「${name}」(${fmt}) 已成功產生並下載！`);
+      },600);
+      return;
+    }
+    document.getElementById('progressFill').style.width=steps[i].pct+'%';
+    document.getElementById('modalStatus').textContent=steps[i].msg;
+    i++;setTimeout(run,500);
+  };
+  run();
+}
+</script>
+
+<script>
+// ── Session 守衛 + 角色存取控制 ──
+(function(){
+  const ok = JJ.guardPage('jj-reports');
+  if (!ok) return;
+  const _u = JJ.getUser();
+  // 更新側欄使用者名稱
+  document.querySelectorAll('.user-name').forEach(el => el.textContent = _u ? _u.name : '');
+  document.querySelectorAll('.user-role').forEach(el => el.textContent = _u ? _u.role : '');
+  document.querySelectorAll('.user-avatar').forEach(el => { if(_u) el.textContent=_u.name[0]; });
+  // Session 活動更新（滑鼠移動、點擊）
+  ['mousemove','click','keydown','scroll'].forEach(ev =>
+    document.addEventListener(ev, () => JJ.touchSession(), {passive:true, once:false})
+  );
+})();
+</script>
+
+
+<div style="position:fixed;bottom:28px;left:240px;display:flex;gap:10px;z-index:100">
+  <button onclick="realExcelExport('stock')" style="padding:10px 18px;border-radius:10px;background:linear-gradient(135deg,#3dba7e,#2a9960);color:#fff;border:none;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 4px 14px rgba(61,186,126,0.3)">⬇ 庫存現況.xlsx</button>
+  <button onclick="realExcelExport('logs')"  style="padding:10px 18px;border-radius:10px;background:linear-gradient(135deg,#4a90d9,#2d6db0);color:#fff;border:none;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 4px 14px rgba(74,144,217,0.3)">⬇ 異動紀錄.xlsx</button>
+  <button onclick="realExcelExport('all')"   style="padding:10px 18px;border-radius:10px;background:linear-gradient(135deg,#9b6dff,#6b3fd4);color:#fff;border:none;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 4px 14px rgba(155,109,255,0.3)">⬇ 完整報表.xlsx</button>
+</div>
+
+<!-- SheetJS 真實 Excel 匯出 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+function realExcelExport(reportType) {
+  JJ.init();
+  const products = JJ.getProducts();
+  const logs     = JJ.getLogs();
+  const wb = XLSX.utils.book_new();
+  const now = new Date().toLocaleString('zh-TW');
+
+  if (reportType === 'stock' || reportType === 'all') {
+    const rows = [['商品名稱','商品編號','分類','倉庫','現有庫存','單位','安全庫存','狀態']];
+    products.forEach(p => rows.push([p.name,p.code,p.cat,p.wh,p.stock,p.unit,p.safe,p.stock>=p.safe?'正常':p.stock>=p.safe*0.3?'注意':'緊急']));
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{wch:24},{wch:14},{wch:14},{wch:8},{wch:10},{wch:6},{wch:10},{wch:8}];
+    XLSX.utils.book_append_sheet(wb, ws, '庫存現況');
+  }
+  if (reportType === 'logs' || reportType === 'all') {
+    const rows = [['時間','異動類型','商品名稱','倉庫','異動量','異動前','異動後','操作人員','單據號碼','備註']];
+    logs.forEach(l => rows.push([l.time,l.type,l.prod,l.wh,l.chg,l.before,l.after,l.user,l.doc,l.note]));
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{wch:20},{wch:12},{wch:22},{wch:8},{wch:8},{wch:8},{wch:8},{wch:10},{wch:18},{wch:20}];
+    XLSX.utils.book_append_sheet(wb, ws, '異動紀錄');
+  }
+  if (reportType === 'low' || reportType === 'all') {
+    const low = products.filter(p => p.stock < p.safe);
+    const rows = [['商品名稱','倉庫','現有庫存','安全庫存','缺口','建議採購量']];
+    low.forEach(p => rows.push([p.name,p.wh,p.stock,p.safe,p.safe-p.stock,p.safe*2-p.stock]));
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{wch:24},{wch:8},{wch:10},{wch:10},{wch:8},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, ws, '低庫存警示');
+  }
+
+  const fname = `JJ庫存報表_${new Date().toISOString().slice(0,10)}.xlsx`;
+  XLSX.writeFile(wb, fname);
+  showToastMsg('✅ Excel 已下載：' + fname);
+}
+
+function showToastMsg(msg) {
+  let t = document.getElementById('exportToast');
+  if (!t) { t = document.createElement('div'); t.id='exportToast';
+    t.style.cssText='position:fixed;bottom:30px;right:30px;background:#1a2a1e;border:1px solid rgba(61,186,126,0.3);border-radius:12px;padding:14px 20px;font-size:13px;font-weight:600;color:#3dba7e;box-shadow:0 8px 24px rgba(0,0,0,.4);transition:all .3s;z-index:999;';
+    document.body.appendChild(t); }
+  t.textContent = msg;
+  t.style.transform='translateY(0)'; t.style.opacity='1';
+  setTimeout(() => { t.style.opacity='0'; }, 3500);
+}
+
+// 攔截所有「匯出」按鈕，替換成真實匯出
+document.addEventListener('DOMContentLoaded', () => {
+  // 替換點擊事件
+  document.querySelectorAll('.report-item button, .export-btn, [onclick*="export"], [onclick*="Export"]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const text = btn.textContent.toLowerCase();
+      if (text.includes('庫存') || text.includes('stock')) realExcelExport('stock');
+      else if (text.includes('異動') || text.includes('log')) realExcelExport('logs');
+      else if (text.includes('低庫存') || text.includes('alert')) realExcelExport('low');
+      else realExcelExport('all');
+    }, true);
+  });
+});
+</script>
+
+</body>
+</html>

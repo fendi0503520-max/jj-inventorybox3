@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<script src="shared_store.js"></script>
+
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JJ 簡易庫存管理系統 — 倉庫設定</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f0f4f8;--sidebar:#ffffff;--panel:#ffffff;--card:#ffffff;--border:rgba(0,0,0,0.09);--border2:rgba(0,0,0,0.15);--red:#e03a2f;--red-dim:rgba(220,38,38,0.08);--blue:#1d6fb8;--blue-dim:rgba(29,111,184,0.08);--green:#1a9e5c;--green-dim:rgba(26,158,92,0.08);--yellow:#f5a623;--yellow-dim:rgba(217,119,6,0.08);--purple:#9b6dff;--purple-dim:rgba(124,58,237,0.08);--text:#1a2535;--muted:#64748b;--muted2:#e2e8f0;}
+body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans TC',sans-serif;color:var(--text);font-size:14px;}
+.sidebar{width:220px;flex-shrink:0;background:var(--sidebar);border-right:1px solid var(--border);box-shadow:2px 0 12px rgba(0,0,0,0.06);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;}
+.sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px;}
+.jj-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#e03a2f,#a01e15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;flex-shrink:0;}
+.logo-text{font-size:13px;font-weight:700;color:#1a2535;}.logo-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+.nav{flex:1;padding:16px 0;overflow-y:auto;}
+.nav-section{font-size:10px;color:var(--muted);letter-spacing:.1em;padding:12px 20px 6px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;color:#64748b;font-size:13px;font-weight:500;border-left:3px solid transparent;transition:all .2s;}
+.nav-item:hover{color:var(--text);background:rgba(0,0,0,0.03);}
+.nav-item.active{color:var(--red);background:rgba(220,38,38,0.06);border-left-color:var(--red);}
+.nav-icon{font-size:16px;width:20px;text-align:center;}
+.nav-badge{margin-left:auto;padding:1px 7px;border-radius:10px;background:var(--red);color:#fff;font-size:10px;font-weight:700;}
+.sidebar-user{padding:16px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+.user-name{font-size:13px;font-weight:600;}.user-role{font-size:10px;color:var(--muted);margin-top:1px;}
+.user-logout{margin-left:auto;color:var(--muted);font-size:16px;cursor:pointer;}
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;}
+.topbar{height:60px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:16px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:16px;font-weight:700;}.topbar-breadcrumb{font-size:12px;color:var(--muted);margin-left:4px;}
+.topbar-date{margin-left:auto;font-size:12px;color:var(--muted);}
+.topbar-notif{width:34px;height:34px;border-radius:8px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;font-size:16px;}
+.notif-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--red);border:2px solid var(--panel);}
+.content{padding:28px;flex:1;}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,0.04);padding:16px 18px;}
+.kpi-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+.kpi-value{font-size:26px;font-weight:700;}
+.wh-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:24px;}
+.wh-card{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:transform .2s,border-color .2s;}
+.wh-card:hover{transform:translateY(-2px);border-color:var(--border2);}
+.wh-top{padding:20px;display:flex;align-items:flex-start;gap:14px;border-bottom:1px solid var(--border);}
+.wh-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.wh-name{font-size:16px;font-weight:700;margin-bottom:3px;}
+.wh-location{font-size:12px;color:var(--muted);}
+.wh-status{margin-left:auto;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;}
+.wh-stats{padding:16px 20px;display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.stat-item{display:flex;flex-direction:column;gap:3px;}
+.stat-label{font-size:11px;color:var(--muted);}
+.stat-value{font-size:15px;font-weight:700;}
+.wh-bar-section{padding:0 20px 16px;}
+.bar-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:5px;}
+.bar-bg{height:8px;background:var(--muted2);border-radius:4px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:4px;}
+.wh-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;}
+.wh-btn{flex:1;padding:8px;border-radius:8px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .15s;text-align:center;}
+.wh-btn:hover{color:var(--text);border-color:var(--border2);}
+.wh-btn.primary{background:var(--blue-dim);color:var(--blue);border-color:rgba(74,144,217,0.2);}
+.wh-btn.primary:hover{background:rgba(74,144,217,0.2);}
+.sys-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:20px;}
+.sys-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.sys-title{font-size:14px;font-weight:700;}
+.sys-body{padding:20px;}
+.sys-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-label{font-size:11px;color:var(--muted);font-weight:500;letter-spacing:.04em;text-transform:uppercase;}
+.form-input{padding:9px 12px;background:rgba(0,0,0,0.03);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:inherit;outline:none;}
+.form-input:focus{border-color:var(--blue);}
+select.form-input{cursor:pointer;}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);}
+.toggle-row:last-child{border-bottom:none;}
+.toggle-info{display:flex;flex-direction:column;gap:3px;}
+.toggle-label{font-size:13px;font-weight:500;}
+.toggle-desc{font-size:12px;color:var(--muted);}
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:var(--muted2);border-radius:12px;cursor:pointer;transition:.3s;}
+.toggle-slider:before{content:"";position:absolute;width:18px;height:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;}
+.toggle input:checked+.toggle-slider{background:var(--green);}
+.toggle input:checked+.toggle-slider:before{transform:translateX(20px);}
+.btn-save-sys{padding:10px 24px;border-radius:9px;background:linear-gradient(135deg,var(--blue),#2d6db0);color:#fff;border:none;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;}
+.btn-add-wh{padding:8px 16px;border-radius:9px;background:var(--blue-dim);color:var(--blue);border:1px solid rgba(74,144,217,0.2);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;}
+.toast{position:fixed;bottom:30px;right:30px;background:#1a2a1e;border:1px solid rgba(61,186,126,0.3);border-radius:12px;padding:14px 20px;font-size:13px;font-weight:600;color:var(--green);box-shadow:0 8px 24px rgba(0,0,0,0.4);transform:translateY(80px);opacity:0;transition:all .3s;z-index:999;}
+.toast.show{transform:translateY(0);opacity:1;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+@media(max-width:960px){.wh-grid{grid-template-columns:1fr 1fr;}.kpi-row{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:640px){.sidebar{display:none;}.main{margin-left:0;}.wh-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo"><div class="jj-icon">JJ</div><div><div class="logo-text">JJ 庫存系統</div><div class="logo-sub">倉儲／物流版</div></div></div>
+    <nav class="nav">
+    <div class="nav-section">主選單</div>
+    <div class="nav-item" onclick="location.href='jj-dashboard.html'"><span class="nav-icon">🏠</span> 儀表板</div>
+    <div class="nav-item" onclick="location.href='jj-products.html'"><span class="nav-icon">📦</span> 商品管理</div>
+    <div class="nav-item" onclick="location.href='jj-stock.html'"><span class="nav-icon">🔍</span> 庫存查詢</div>
+    <div class="nav-section">入出庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-inbound.html'"><span class="nav-icon">📥</span> 入庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-outbound.html'"><span class="nav-icon">📤</span> 出庫作業</div>
+    <div class="nav-item" onclick="location.href='jj-transfer.html'"><span class="nav-icon">🔄</span> 調撥作業</div>
+    <div class="nav-item" onclick="location.href='jj-logs.html'"><span class="nav-icon">📋</span> 異動紀錄</div>
+    <div class="nav-section">分析</div>
+    <div class="nav-item" onclick="location.href='jj-warroom.html'"><span class="nav-icon">🎯</span> 戰情室</div>
+    <div class="nav-section">警示與報表</div>
+    <div class="nav-item" onclick="location.href='jj-alerts.html'"><span class="nav-icon">🔔</span> 低庫存警示<span class="nav-badge" id="navBadge">0</span></div>
+    <div class="nav-item" onclick="location.href='jj-inventory.html'"><span class="nav-icon">🗂️</span> 盤點作業</div>
+    <div class="nav-item" onclick="location.href='jj-reports.html'"><span class="nav-icon">📊</span> 報表匯出</div>
+    <div class="nav-section">工具</div>
+    <div class="nav-item" onclick="location.href='jj-qrcode.html'"><span class="nav-icon">🔲</span> QR Code</div>
+    <div class="nav-section">系統管理</div>
+    <div class="nav-item" onclick="location.href='jj-users.html'"><span class="nav-icon">👥</span> 權限管理</div>
+    <div class="nav-item" onclick="location.href='jj-oplog.html'"><span class="nav-icon">📝</span> 操作紀錄</div>
+    <div class="nav-item" onclick="location.href='jj-warehouse.html'" ><span class="nav-icon">🏭</span> 倉庫設定</div>
+    <div class="nav-section">帳號</div>
+    <div class="nav-item" onclick="location.href='jj-profile.html'"><span class="nav-icon">👤</span> 帳號設定</div>
+  </nav>
+  <div class="sidebar-user">
+    <div class="user-avatar">黃</div>
+    <div><div class="user-name">黃小翰</div><div class="user-role">系統管理員</div></div>
+    <div class="user-logout" onclick="if(confirm('確定要登出嗎？')){JJ.addLog({type:'登入/登出',prod:'—',wh:'—',chg:'—',before:'—',after:'—',user:(JJ.getUser()||{}).name||'',doc:'—',note:'使用者登出系統'});JJ.clearUser();location.href='login.html';}" style="cursor:pointer">⏻</div>
+  </div>
+</aside>
+<div class="main">
+  <div class="topbar">
+    <div><span class="topbar-title">倉庫設定</span><span class="topbar-breadcrumb">/ 倉庫管理與系統設定</span></div>
+    <div class="topbar-date" id="topbarDate"></div>
+    <div class="topbar-notif">🔔<div class="notif-dot"></div></div>
+  </div>
+  <div class="content">
+    <div class="kpi-row">
+      <div class="kpi" style="border-top:2px solid var(--blue)"><div class="kpi-label">倉庫總數</div><div class="kpi-value" style="color:var(--blue)">3</div></div>
+      <div class="kpi" style="border-top:2px solid var(--green)"><div class="kpi-label">啟用中</div><div class="kpi-value" style="color:var(--green)">3</div></div>
+      <div class="kpi" style="border-top:2px solid var(--yellow)"><div class="kpi-label">總容量 (坪)</div><div class="kpi-value" style="color:var(--yellow)">1,500</div></div>
+      <div class="kpi" style="border-top:2px solid var(--red)"><div class="kpi-label">總使用率</div><div class="kpi-value" style="color:var(--red)">64%</div></div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div style="font-size:15px;font-weight:700;">🏭 倉庫清單</div>
+      <button class="btn-add-wh" onclick="toast('✅ 新增倉庫功能開啟')">＋ 新增倉庫</button>
+    </div>
+
+    <div class="wh-grid">
+      <div class="wh-card">
+        <div class="wh-top">
+          <div class="wh-icon" style="background:var(--blue-dim)">🏭</div>
+          <div><div class="wh-name">大溪倉</div><div class="wh-location">📍 台北市南港區</div></div>
+          <span class="wh-status" style="background:var(--green-dim);color:var(--green)">啟用中</span>
+        </div>
+        <div class="wh-stats">
+          <div class="stat-item"><div class="stat-label">面積</div><div class="stat-value">500 坪</div></div>
+          <div class="stat-item"><div class="stat-label">最大容量</div><div class="stat-value">6,000 件</div></div>
+          <div class="stat-item"><div class="stat-label">目前庫存</div><div class="stat-value" style="color:var(--yellow)">4,280 件</div></div>
+          <div class="stat-item"><div class="stat-label">使用率</div><div class="stat-value" style="color:var(--yellow)">71%</div></div>
+        </div>
+        <div class="wh-bar-section">
+          <div class="bar-label"><span>容量使用率</span><span style="color:var(--yellow);font-weight:700">71%</span></div>
+          <div class="bar-bg"><div class="bar-fill" style="width:71%;background:var(--yellow)"></div></div>
+        </div>
+        <div class="wh-footer">
+          <div class="wh-btn primary" onclick="toast('✏️ 編輯 大溪倉設定')">✏️ 編輯</div>
+          <div class="wh-btn" onclick="toast('📊 查看 大溪倉庫存')">📊 庫存</div>
+          <div class="wh-btn" onclick="toast('📋 大溪倉紀錄')">📋 紀錄</div>
+        </div>
+      </div>
+      <div class="wh-card">
+        <div class="wh-top">
+          <div class="wh-icon" style="background:var(--green-dim)">🏭</div>
+          <div><div class="wh-name">大肚倉</div><div class="wh-location">📍 新北市新莊區</div></div>
+          <span class="wh-status" style="background:var(--green-dim);color:var(--green)">啟用中</span>
+        </div>
+        <div class="wh-stats">
+          <div class="stat-item"><div class="stat-label">面積</div><div class="stat-value">600 坪</div></div>
+          <div class="stat-item"><div class="stat-label">最大容量</div><div class="stat-value">7,000 件</div></div>
+          <div class="stat-item"><div class="stat-label">目前庫存</div><div class="stat-value" style="color:var(--green)">3,200 件</div></div>
+          <div class="stat-item"><div class="stat-label">使用率</div><div class="stat-value" style="color:var(--green)">46%</div></div>
+        </div>
+        <div class="wh-bar-section">
+          <div class="bar-label"><span>容量使用率</span><span style="color:var(--green);font-weight:700">46%</span></div>
+          <div class="bar-bg"><div class="bar-fill" style="width:46%;background:var(--green)"></div></div>
+        </div>
+        <div class="wh-footer">
+          <div class="wh-btn primary" onclick="toast('✏️ 編輯 大肚倉設定')">✏️ 編輯</div>
+          <div class="wh-btn" onclick="toast('📊 查看 大肚倉庫存')">📊 庫存</div>
+          <div class="wh-btn" onclick="toast('📋 大肚倉紀錄')">📋 紀錄</div>
+        </div>
+      </div>
+      <div class="wh-card">
+        <div class="wh-top">
+          <div class="wh-icon" style="background:var(--purple-dim)">🏭</div>
+          <div><div class="wh-name">岡山倉</div><div class="wh-location">📍 桃園市中壢區</div></div>
+          <span class="wh-status" style="background:var(--green-dim);color:var(--green)">啟用中</span>
+        </div>
+        <div class="wh-stats">
+          <div class="stat-item"><div class="stat-label">面積</div><div class="stat-value">400 坪</div></div>
+          <div class="stat-item"><div class="stat-label">最大容量</div><div class="stat-value">5,000 件</div></div>
+          <div class="stat-item"><div class="stat-label">目前庫存</div><div class="stat-value" style="color:var(--red)">3,800 件</div></div>
+          <div class="stat-item"><div class="stat-label">使用率</div><div class="stat-value" style="color:var(--red)">76%</div></div>
+        </div>
+        <div class="wh-bar-section">
+          <div class="bar-label"><span>容量使用率</span><span style="color:var(--red);font-weight:700">76%</span></div>
+          <div class="bar-bg"><div class="bar-fill" style="width:76%;background:var(--red)"></div></div>
+        </div>
+        <div class="wh-footer">
+          <div class="wh-btn primary" onclick="toast('✏️ 編輯 岡山倉設定')">✏️ 編輯</div>
+          <div class="wh-btn" onclick="toast('📊 查看 岡山倉庫存')">📊 庫存</div>
+          <div class="wh-btn" onclick="toast('📋 岡山倉紀錄')">📋 紀錄</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 系統設定 -->
+    <div class="sys-card">
+      <div class="sys-header"><div class="sys-title">⚙️ 系統全域設定</div><button class="btn-save-sys" onclick="toast('✅ 系統設定已儲存！')">儲存設定</button></div>
+      <div class="sys-body">
+        <div class="sys-grid" style="margin-bottom:20px;">
+          <div class="form-group"><label class="form-label">公司名稱</label><input class="form-input" value="日翊文化行銷股份有限公司"/></div>
+          <div class="form-group"><label class="form-label">系統名稱</label><input class="form-input" value="JJ 簡易庫存管理系統"/></div>
+          <div class="form-group"><label class="form-label">低庫存警示閾值</label><input class="form-input" type="number" value="30" min="0" max="100"/></div>
+          <div class="form-group"><label class="form-label">預設倉庫</label><select class="form-input"><option>大溪倉</option><option>大肚倉</option><option>岡山倉</option></select></div>
+          <div class="form-group"><label class="form-label">日期格式</label><select class="form-input"><option>YYYY/MM/DD</option><option>DD/MM/YYYY</option><option>MM/DD/YYYY</option></select></div>
+          <div class="form-group"><label class="form-label">通知 Email</label><input class="form-input" type="email" value="admin@jj.com.tw"/></div>
+        </div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--muted)">功能開關</div>
+        <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">低庫存自動通知</div><div class="toggle-desc">庫存低於閾值時自動發送 Email 通知</div></div><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+        <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">操作紀錄 Log</div><div class="toggle-desc">記錄所有使用者操作行為</div></div><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+        <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">每日自動備份</div><div class="toggle-desc">每日凌晨 2:00 自動備份資料</div></div><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+        <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">二次確認出庫</div><div class="toggle-desc">出庫時需二次確認避免誤操作</div></div><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+        <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">盤點鎖倉模式</div><div class="toggle-desc">盤點期間自動鎖定入出庫作業</div></div><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toastEl"></div>
+<script>
+const d=new Date();const days=["日","一","二","三","四","五","六"];
+document.getElementById("topbarDate").textContent=d.getFullYear()+"/"+(d.getMonth()+1).toString().padStart(2,"0")+"/"+d.getDate().toString().padStart(2,"0")+" (週"+days[d.getDay()]+")";
+function toast(msg){const t=document.getElementById("toastEl");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3000);}
+</script>
+
+<script>
+// ── Session 守衛 + 角色存取控制 ──
+(function(){
+  const ok = JJ.guardPage('jj-warehouse');
+  if (!ok) return;
+  const _u = JJ.getUser();
+  // 更新側欄使用者名稱
+  document.querySelectorAll('.user-name').forEach(el => el.textContent = _u ? _u.name : '');
+  document.querySelectorAll('.user-role').forEach(el => el.textContent = _u ? _u.role : '');
+  document.querySelectorAll('.user-avatar').forEach(el => { if(_u) el.textContent=_u.name[0]; });
+  // Session 活動更新（滑鼠移動、點擊）
+  ['mousemove','click','keydown','scroll'].forEach(ev =>
+    document.addEventListener(ev, () => JJ.touchSession(), {passive:true, once:false})
+  );
+})();
+</script>
+
+</body>
+</html>
